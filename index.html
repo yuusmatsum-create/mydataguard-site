@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>MyDataGuard｜あなたの個人情報の在りかが見える</title>
+<meta name="description" content="受信メールの件名・差出人・日付だけを、お使いのブラウザの中で読み、あなたの個人情報を持っている会社の一覧を作ります。本文は読みません。一覧は運営者のサーバーに送りません。アルファ版（招待制・100人まで・無料）の先行登録を受け付けています。">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">本文へ移動</a>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="MyDataGuard トップ"><svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#13223A"/><path d="M5 7.5h10M5 10h10M5 12.5h6" stroke="#fff" stroke-width="1.2"/></svg>MyDataGuard</a>
+    <nav class="nav" aria-label="サイト内">
+      <span class="pill">アルファ版（招待制）</span>
+      <a href="business.html">事業者の方へ</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ========== 最初の画面 ========== -->
+<section class="hero" aria-labelledby="h0">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">アルファ版　招待制・100人まで・無料</p>
+      <h1 id="h0">あなたの個人情報が、<em>どの会社に</em>あるか見える。</h1>
+      <p class="lead">会員登録、本人確認、退会。届いたメールの件名・差出人・日付だけを手がかりに、あなたの個人情報を持っている会社の一覧を作ります。<br>メールの本文は読みません。読み取りも一覧の保存も、お使いのブラウザの中だけで行い、運営者のサーバーには送りません。</p>
+      <div class="cta">
+        <a class="primary" href="https://docs.google.com/forms/d/e/1FAIpQLSfW9NRvxqwA2wwMPDYxvJ1wHobuv4oSwIfA16M-4BA4gpGMTA/viewform">アルファ版に先行登録する</a>
+        <p class="cta-note">Googleフォームが開きます。「iPhone版が出たら知らせてほしい」だけのご希望も、同じフォームで受け付けます。</p>
+      </div>
+    </div>
+
+    <figure class="mini">
+      <div class="mini-in" aria-hidden="true">
+        <div class="mini-hd"><b>MyDataGuard</b><span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>このブラウザの中で表示</span></div>
+        <div class="card">
+          <p class="k">あなたの個人情報がある会社</p>
+          <p class="n"><b>104</b><small>社</small></p>
+          <p class="vs"><span>うち、身分証を渡した会社</span><b>18社</b></p>
+        </div>
+        <div class="attn">
+          <span class="dot"></span>
+          <p><small class="hot">漏えいのお知らせ</small><b>ノリカ カーシェア</b><small>会社からお詫びのメール（10月7日）</small></p>
+        </div>
+        <ul class="rows">
+          <li>リユース マーケット<span>身分証</span></li>
+          <li>暮らしの通販<span>会員</span></li>
+          <li class="off">駅前の24時間ジム<span>退会済み</span></li>
+        </ul>
+      </div>
+      <figcaption>画面のイメージです。会社名・件数は架空で、実在の会社とは関係ありません。</figcaption>
+      <p class="sr">画面のイメージ：あなたの個人情報がある会社 104社、うち身分証を渡した会社 18社。漏えいのお知らせが1件。会社名・件数は架空です。</p>
+    </figure>
+  </div>
+</section>
+
+<!-- ========== 01 できること ========== -->
+<section class="sec" id="features" aria-labelledby="h1x">
+  <div class="wrap">
+    <p class="no">01</p>
+    <h2 id="h1x">アルファ版でできること</h2>
+    <ol class="scenes">
+      <li>
+        <span class="n">1</span>
+        <h3>あなたの個人情報が、どの会社にあるかが見える</h3>
+        <p>Gmailの件名・差出人・日付から、会員登録・本人確認・退会などの手がかりを探し、「あなたの個人情報を持っている会社」の一覧を作ります。何年も前に登録して忘れていた会社も、手がかりが残っていれば並びます。<small>メールから推定した一覧です。見落としや誤りがあることがあります。</small></p>
+      </li>
+      <li>
+        <span class="n">2</span>
+        <h3>漏えいを知らせる</h3>
+        <p>会社から届いたお詫びのメールや、企業・当局の公表と、あなたの一覧を照らし合わせてお知らせします。照らし合わせも、お使いのブラウザの中で行います。<small>公表の一覧はこのサイトからブラウザに読み込みます。あなたの一覧を送ることはありません。</small></p>
+      </li>
+      <li>
+        <span class="n">3</span>
+        <h3>止める・消してもらう依頼文の下書きを作る</h3>
+        <p>個人情報保護法にもとづく、開示・利用停止・消去の依頼文の下書きを作ります。送るかどうか、いつ送るかはあなたが決め、送るのもあなたです。</p>
+      </li>
+      <li>
+        <span class="n">4</span>
+        <h3>引っ越し・改姓のとき、手続き漏れを防ぐ</h3>
+        <p>住所や氏名を渡している会社の一覧を出し、変更の手続きを済ませた会社に印をつけられます。</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ========== 02 どこを読むか ========== -->
+<section class="sec" id="reads" aria-labelledby="h2x">
+  <div class="wrap">
+    <p class="no">02</p>
+    <h2 id="h2x">読むのは、メールの件名・差出人・日付だけ。</h2>
+    <div class="prose">
+      <p>あなたの個人情報を守るためのサービスが、あなたの情報を集めては意味がありません。読む範囲を絞り、読んだ結果はあなたのブラウザから出さない作りにしています。</p>
+    </div>
+    <figure class="reads" aria-labelledby="readscap">
+      <figcaption id="readscap" class="sr">MyDataGuardがメールのどこを読み、どこに置くか</figcaption>
+      <dl>
+        <dt>読むもの</dt>
+        <dd class="chips"><i>件名</i><i>差出人</i><i>日付</i></dd>
+        <dt>読まないもの</dt>
+        <dd class="chips off"><i>本文</i><i>添付ファイル</i></dd>
+        <dt>読み取る場所</dt>
+        <dd>お使いのブラウザの中</dd>
+        <dt>会社の一覧の保存先</dt>
+        <dd>お使いのブラウザの中</dd>
+        <dt>運営者のサーバーへ</dt>
+        <dd>メールの内容も、会社の一覧も送りません</dd>
+      </dl>
+    </figure>
+    <ul class="note">
+      <li>Gmailへのアクセスは、Googleアカウントの設定からいつでも解除できます（手順は<a href="privacy.html#alpha">プライバシーポリシー</a>に記載）</li>
+      <li>ブラウザのデータを消すと、一覧も消えます</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 03 これから ========== -->
+<section class="sec" id="next" aria-labelledby="h3x">
+  <div class="wrap">
+    <p class="no">03</p>
+    <p class="tagline">準備中</p>
+    <h2 id="h3x">次からは、個人情報そのものを渡さずに登録できるように。</h2>
+    <div class="prose">
+      <p>見えるようになったら、次は減らす番です。個人情報そのものを渡さずにサービスに登録できる仕組みを、信頼できる本人確認の事業者と組んで準備しています。会社に届くのは「本人確認済み」「20歳以上」といった確認の結果だけ、という形を目指しています。</p>
+      <p>いまはまだ提供していません。始められるようになったら、先行登録の方にお知らせします。</p>
+    </div>
+    <div class="pair">
+      <figure class="pcard">
+        <figcaption>これまで：会社から、あなたはこう見えています</figcaption>
+        <div class="pcard-in">
+          <p class="pcard-h">ある通販の会社の会員情報</p>
+          <div class="pr"><span>氏名</span><b>山田 太郎</b></div>
+          <div class="pr"><span>住所</span><b>〒123-4567 みどり市さくら町1-2-3</b></div>
+          <div class="pr"><span>電話番号</span><b class="num">090-1234-5678</b></div>
+          <div class="pr"><span>生年月日</span><b>1994年6月14日</b></div>
+        </div>
+      </figure>
+      <figure class="pcard fut">
+        <figcaption>これから（準備中）：会社に届くのは、確認の結果だけ</figcaption>
+        <div class="pcard-in">
+          <p class="pcard-h">ある通販の会社の会員情報</p>
+          <div class="pr empty"><span>氏名</span><b>―</b></div>
+          <div class="pr empty"><span>住所</span><b>―</b></div>
+          <div class="pr empty"><span>電話番号</span><b>―</b></div>
+          <div class="pr empty"><span>生年月日</span><b>―</b></div>
+          <div class="ck">
+            <p>確認の結果</p>
+            <div class="pr"><span>本人確認</span><b><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>済み</b></div>
+            <div class="pr"><span>20歳以上</span><b><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>はい</b></div>
+          </div>
+        </div>
+      </figure>
+    </div>
+    <p class="note">図はイメージです。人名・住所・電話番号は架空です。</p>
+  </div>
+</section>
+
+<!-- ========== 04 アルファ版について ========== -->
+<section class="sec" id="alpha" aria-labelledby="h4x">
+  <div class="wrap">
+    <p class="no">04</p>
+    <h2 id="h4x">アルファ版について、先にお伝えしておくこと</h2>
+    <ul class="points">
+      <li><b>招待制・100人まで・無料です。</b> 先行登録いただいた方に、順にご招待のメールをお送りします。</li>
+      <li><b>Googleの画面に「このアプリは確認されていません」と表示されます。</b> Googleの審査を受ける前の段階のためです。表示の内容を確かめたうえで進むかどうかを決めてください。</li>
+      <li><b>開発中のサービスです。</b> 会社の見落としや誤り、画面の変更があります。気づいた点をお知らせいただけると助かります。</li>
+      <li><b>いまはGmailだけに対応しています。</b> iPhone版をご希望の方には、出たときにお知らせします。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ========== 05 先行登録 ========== -->
+<section class="sec last" id="join" aria-labelledby="h5x">
+  <div class="wrap">
+    <p class="no">05</p>
+    <h2 id="h5x">まず、あなたの個人情報がどこにあるかを知るところから。</h2>
+    <div class="prose">
+      <p>フォームでは、メールアドレスと、次のどちらを希望するかを伺います。</p>
+      <ul class="note">
+        <li>アルファ版に参加したい（招待制・100人まで）</li>
+        <li>iPhone版が出たら知らせてほしい</li>
+      </ul>
+    </div>
+    <div class="cta">
+      <a class="primary" href="https://docs.google.com/forms/d/e/1FAIpQLSfW9NRvxqwA2wwMPDYxvJ1wHobuv4oSwIfA16M-4BA4gpGMTA/viewform">アルファ版に先行登録する</a>
+      <p class="cta-note">Googleフォームが開きます。いただいた情報の扱いは<a href="privacy.html">プライバシーポリシー</a>をご覧ください。</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="who">
+      <b>MyDataGuard</b>
+      <p>アルファ版（招待制）　運営：<span class="operator-trade-name">松本悠作</span></p>
+    </div>
+    <ul>
+      <li><a href="privacy.html">プライバシーポリシー</a></li>
+      <li><a href="business.html">事業者の方へ</a></li>
+    </ul>
+  </div>
+</footer>
+</body>
+</html>
