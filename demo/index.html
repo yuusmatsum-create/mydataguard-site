@@ -1,0 +1,1095 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; form-action 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>MyDataGuard デモ（架空のデータ）</title>
+<meta name="description" content="MyDataGuard の画面の流れを、架空のデータで試せるデモです。メールは読み取りません。">
+<style>
+/* 紺の墨と紙の白。強調色は朱1色（漏えいの要対応だけ）。主役の「物」は紺のカード1枚
+   文字の大きさは4段階（40 / 20 / 15 / 12）、太さは2段階（400 / 600）。角丸は12pxの1種類。ボタンの高さは48px */
+:root{
+  --bg:#F6F5F1; --surface:#FFFFFF; --ink:#13223A; --ink2:#1E3150; --text:#1B2433; --sub:#6B6F76; --line:#E3E1DA; --press:#EEECE6; --accent:#B8432F;
+  --jp:"Hiragino Sans","BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;
+  --num:"Segoe UI","Helvetica Neue","Hiragino Sans",sans-serif;
+  --t1:40px; --t2:20px; --t3:15px; --t4:12px;
+  --r:12px; --h:48px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#DCDAD4;font-family:var(--jp);color:var(--text);font-size:var(--t3);line-height:1.6;padding:0 16px 24px;-webkit-font-smoothing:antialiased}
+h1,h2,p{margin:0}
+h1,h2,.lead,.t,.note,.hint,.confirm,#demo-banner p{word-break:auto-phrase;text-wrap:pretty}
+h1{text-wrap:balance}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums lining-nums;letter-spacing:0}
+.unit{font-size:var(--t4);margin-left:2px;font-weight:400}
+
+/* デモであることを示す帯（スマホ枠の外、ページの最上部） */
+#demo-banner{margin:0 -16px 24px;background:var(--surface);border-bottom:1px solid var(--line);padding:16px}
+#demo-banner .in{max-width:560px;margin:0 auto;display:grid;gap:8px}
+#demo-banner p{font-size:var(--t4);color:var(--text);line-height:1.8}
+#demo-banner p b{font-weight:600;color:var(--ink)}
+#demo-banner nav{display:flex;flex-wrap:wrap;gap:4px 24px;font-size:var(--t4)}
+#demo-banner a,#demo-banner button{color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-size:var(--t4);min-height:32px;display:inline-flex;align-items:center}
+
+.phone{max-width:390px;margin:0 auto;background:var(--bg);border-radius:44px;overflow:hidden;position:relative;height:800px;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15181D}
+@media (max-width:430px){.phone{border-radius:24px;height:760px} }
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 24px 112px;scrollbar-width:none}
+.screen.bare{padding-bottom:32px}
+.screen::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion:no-preference){
+  .screen.anim>*:not(.card){animation:fade .2s ease-out}
+  .just{animation:just 1.6s ease-out}
+}
+@keyframes fade{from{opacity:0} to{opacity:1} }
+@keyframes just{from{background:var(--press)} to{background:transparent} }
+
+/* ヘッダー（マーク・サービス名・端末内の表示・お客さま名・前回ログイン） */
+.hd{display:flex;justify-content:space-between;align-items:center;min-height:40px}
+.brand{display:flex;align-items:center;gap:8px;font-size:var(--t4);font-weight:600;letter-spacing:.08em;color:var(--ink)}
+.brand svg{width:20px;height:20px;flex:none}
+.brand-sub{font-weight:400;letter-spacing:.02em;color:var(--sub);margin-left:2px}
+.safe{display:flex;align-items:center;gap:4px;font-size:var(--t4);color:var(--sub)}
+.safe svg{width:14px;height:14px}
+.who{margin-top:16px;display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.who b{font-size:var(--t3);font-weight:600;color:var(--ink)}
+.who span{font-size:var(--t4);color:var(--sub)}
+
+/* 主役：紺のカード（これまで と これから の対比だけ） */
+.card{margin-top:16px;background:var(--ink);color:#fff;border-radius:var(--r);padding:24px;display:grid;gap:16px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.card .k{font-size:var(--t4);color:rgba(255,255,255,.66);letter-spacing:.02em}
+.card .n{display:flex;align-items:baseline;justify-content:space-between;margin-top:8px}
+.card .n b{font-family:var(--num);font-weight:400;font-size:var(--t1);line-height:1;font-variant-numeric:tabular-nums}
+.card .n b .unit{font-family:var(--jp);font-size:var(--t3);margin-left:4px;color:rgba(255,255,255,.8)}
+.card .n small{font-size:var(--t4);color:rgba(255,255,255,.5)}
+.card .vs{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:16px;border-top:1px solid rgba(255,255,255,.14);padding-top:16px}
+.card .vs .k{color:rgba(255,255,255,.8)}
+.card .vs b{font-family:var(--num);font-weight:400;font-size:var(--t2);font-variant-numeric:tabular-nums}
+.card .vs b .unit{font-family:var(--jp);color:rgba(255,255,255,.8)}
+
+/* ホーム：要約と入口 */
+.sec .num{font-weight:400}
+.sec+.src{margin-top:8px}
+.lab{display:inline-flex;align-items:center;gap:8px}
+.nomark{width:8px;height:8px;flex:none}
+.row .act{font-size:var(--t4);color:var(--ink);font-weight:600;white-space:nowrap;text-align:right}
+.row .cnt{font-size:var(--t3);color:var(--ink);white-space:nowrap;text-align:right}
+.row.tight{min-height:48px;padding:8px 0}
+.row.tight .nm{display:flex}
+.more-row .nm{font-size:var(--t4);color:var(--ink);padding-left:16px}
+.row .meta{padding-left:0}
+.list .row[data-from] .meta{padding-left:16px}
+/* 一覧画面 */
+.search{margin-top:24px;width:100%;height:var(--h);border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:0 16px;font:inherit;font-size:var(--t3);color:var(--text)}
+.search:focus{outline:2px solid var(--ink);outline-offset:-1px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;margin-top:16px}
+.legend>span{display:inline-flex;gap:8px;align-items:center}
+
+/* 要対応（漏えい） */
+.attn{margin-top:16px;background:var(--surface);border-radius:var(--r);padding:16px;display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);width:100%}
+.attn:active{background:var(--press)}
+/* 段階は形で分ける：塗り＝漏えい通知あり（会社からお詫び）／輪郭＝漏えいの可能性（企業の公表あり・対象か未確定） */
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+.ring{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--accent);flex:none}
+.chev{width:16px;height:16px;color:#A3A6AB;flex:none}
+
+/* 切り替え */
+.seg{margin-top:32px;display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+.seg button{text-align:center;min-height:var(--h);padding:8px 0;font-size:var(--t3);color:var(--sub);border-bottom:2px solid transparent;margin-bottom:-1px}
+.seg button[aria-pressed="true"]{color:var(--ink);border-color:var(--ink);font-weight:600}
+.filters{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.filters button{font-size:var(--t4);color:var(--sub);height:32px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);white-space:nowrap}
+.filters button[aria-pressed="true"]{color:#fff;background:var(--ink);border-color:var(--ink)}
+.filters .num{margin-left:4px}
+
+/* 一覧 */
+.list{margin-top:8px}
+.row{display:grid;grid-template-columns:1fr auto 16px;gap:12px;align-items:center;min-height:64px;padding:12px 0;border-bottom:1px solid var(--line);width:100%}
+.row:active{background:var(--press)}
+.row .nm{font-size:var(--t3);font-weight:400;line-height:1.4;min-width:0;color:var(--text)}
+.row .meta{display:block;font-size:var(--t4);color:var(--sub);margin-top:4px;line-height:1.5}
+.row .st{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:var(--t4);color:var(--sub);white-space:nowrap;min-width:64px}
+.row .st.hot{color:var(--accent)}
+.row .st.on{color:var(--ink);font-weight:600}
+.row.off .nm{color:var(--sub)}
+.note{margin-top:24px;font-size:var(--t4);color:var(--sub);line-height:1.8}
+.lead{font-size:var(--t3);margin-top:16px;line-height:1.8}
+
+/* これから：MyDataGuardがお預かりする情報（構想）の行 */
+.src{margin-top:24px;width:100%;display:grid;grid-template-columns:1fr 16px;gap:12px;align-items:center;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.src:active{background:var(--press)}
+.src .k{font-size:var(--t4);color:var(--sub);display:block}
+.src .nm{display:block;font-size:var(--t3);font-weight:600;margin-top:4px;line-height:1.5;color:var(--ink)}
+.src .meta{display:block;font-size:var(--t4);color:var(--sub);margin-top:4px}
+.sec{margin-top:32px;font-size:var(--t4);color:var(--sub);font-weight:600;letter-spacing:.04em}
+
+/* タブバー */
+.tabbar{position:absolute;left:0;right:0;bottom:0;background:rgba(246,245,241,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);padding:8px 24px 24px}
+.tabbar[hidden]{display:none}
+.tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:var(--t4);color:#9A9DA3;text-align:center;min-height:var(--h);border-radius:var(--r)}
+.tabbar button:active{background:var(--press)}
+.tabbar button[aria-current="page"]{color:var(--ink);font-weight:600}
+.tabbar svg{width:24px;height:24px}
+.tabbar .num{margin-left:4px}
+
+/* 詳細 */
+.back{font-size:var(--t4);color:var(--ink);display:inline-flex;gap:4px;align-items:center;min-height:40px;padding-right:16px}
+.back svg{width:16px;height:16px}
+.dh{margin-top:8px}
+.dh .k{font-size:var(--t4);color:var(--sub)}
+.dh h1{font-size:var(--t2);font-weight:600;line-height:1.4;margin-top:4px;color:var(--ink)}
+.dh .stline{margin-top:8px;font-size:var(--t4);color:var(--sub);display:flex;gap:8px 16px;flex-wrap:wrap;align-items:center}
+.dh .stline .hot{color:var(--accent);display:inline-flex;align-items:center;gap:8px}
+.dh .stline .on{color:var(--ink);font-weight:600}
+.span2{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.span2 div{padding:16px;display:grid;gap:4px}
+.span2 div+div{border-left:1px solid var(--line)}
+.span2 span{font-size:var(--t4);color:var(--sub)}
+.span2 b{font-weight:600;font-size:var(--t3);color:var(--ink)}
+.blk{margin-top:32px}
+.blk h2{font-size:var(--t4);color:var(--sub);font-weight:600;letter-spacing:.04em}
+.kv{margin-top:8px;border-top:1px solid var(--line)}
+.kv div{display:grid;grid-template-columns:1fr auto;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.kv div span{color:var(--sub)}
+.kv div b{font-weight:600;color:var(--ink);text-align:right}
+.hint{margin-top:8px;font-size:var(--t4);color:var(--sub);line-height:1.8}
+.tl{list-style:none;margin:16px 0 0 3px;padding:0;border-left:1px solid var(--line)}
+.tl li{position:relative;padding:0 0 16px 20px;font-size:var(--t3);line-height:1.5}
+.tl li:last-child{padding-bottom:0}
+.tl li:before{content:"";position:absolute;left:-4px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--bg);border:1px solid var(--ink)}
+.tl li.hot:before{background:var(--accent);border-color:var(--accent)}
+.tl li.hot .tx,.tl li.maybe .tx{color:var(--accent)}
+.tl li.maybe:before{background:var(--bg);border:1.5px solid var(--accent)}
+.todo{list-style:none;margin:8px 0 0;padding:0;border-top:1px solid var(--line);counter-reset:t}
+.todo li{counter-increment:t;display:grid;grid-template-columns:24px 1fr;gap:8px;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--t3);line-height:1.6}
+.todo li:before{content:counter(t);font-family:var(--num);font-size:var(--t4);color:var(--sub);line-height:2}
+.todo small{display:block;font-size:var(--t4);color:var(--sub);margin-top:4px}
+/* 切り替えスイッチ */
+.opt{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;padding:16px;border-top:1px solid var(--line)}
+.opt b{display:block;font-size:var(--t3);font-weight:600;color:var(--ink)}
+.opt p{font-size:var(--t4);color:var(--sub);margin-top:4px;line-height:1.7}
+.sw{width:48px;height:28px;border-radius:14px;background:#CFCCC4;position:relative;flex:none}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}
+.sw[aria-checked="true"]{background:var(--ink)}
+.sw[aria-checked="true"]:after{left:23px}
+.tl .dt{display:block;font-family:var(--num);font-size:var(--t4);color:var(--sub);font-variant-numeric:tabular-nums}
+.cta{margin-top:40px;display:grid;gap:8px}
+.primary,.secondary,.textbtn{width:100%;min-height:var(--h);border-radius:var(--r);padding:0 16px;text-align:center;font-size:var(--t3);display:flex;align-items:center;justify-content:center}
+.primary{background:var(--ink);color:#fff;font-weight:600}
+.primary:active{background:var(--ink2)}
+.secondary{color:var(--ink);border:1px solid #CFCCC4;background:var(--surface)}
+.secondary:active,.textbtn:active{background:var(--press)}
+.textbtn{color:var(--sub)}
+.sub-cta{font-size:var(--t4);color:var(--sub);text-align:center;margin-top:8px;line-height:1.8}
+.confirm{font-size:var(--t3);line-height:1.8;padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px}
+
+/* 依頼文 */
+.sheet{margin-top:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.sheet textarea{width:100%;min-height:340px;border:0;resize:none;font-family:var(--jp);font-size:var(--t4);line-height:1.9;color:var(--text);background:transparent;padding:0}
+.sheet textarea:focus{outline:none}
+
+/* 方針 */
+.pl{list-style:none;margin:24px 0 0;padding:0;counter-reset:p;border-top:1px solid var(--line)}
+.pl li{counter-increment:p;padding:16px 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:32px 1fr;gap:0 8px}
+.pl li:before{content:counter(p,decimal-leading-zero);font-family:var(--num);font-size:var(--t4);line-height:1.9;color:var(--sub);font-variant-numeric:tabular-nums}
+.pl b{font-size:var(--t3);font-weight:600;line-height:1.5;color:var(--ink)}
+.pl p{font-size:var(--t4);color:var(--sub);margin-top:4px;line-height:1.8}
+
+/* はじめに：メールの読み取り */
+.intro{padding-top:40px}
+.intro .k{font-size:var(--t4);color:var(--sub);letter-spacing:.04em}
+.intro h1{font-size:var(--t2);font-weight:600;line-height:1.5;margin-top:8px;color:var(--ink)}
+.steps{list-style:none;margin:32px 0 0;padding:0;border-top:1px solid var(--line)}
+.steps li{display:grid;grid-template-columns:24px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--line);align-items:start}
+.steps svg{width:24px;height:24px;color:var(--ink)}
+.steps b{display:block;font-size:var(--t3);font-weight:600;color:var(--ink)}
+.steps span{display:block;font-size:var(--t4);color:var(--sub);margin-top:4px;line-height:1.7}
+.box{margin-top:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.acct{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;padding:16px}
+.acct .k{font-size:var(--t4);color:var(--sub)}
+.acct b{display:block;font-size:var(--t3);font-weight:600;color:var(--ink);margin-top:4px}
+.acct .num{font-size:var(--t4);color:var(--sub)}
+
+/* 読み取り中 */
+.scan{padding-top:64px}
+.scan h1{font-size:var(--t2);font-weight:600;color:var(--ink)}
+.meter{margin-top:32px;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.meter div{padding:16px 0;display:grid;gap:4px}
+.meter div+div{border-left:1px solid var(--line);padding-left:16px}
+.meter span{font-size:var(--t4);color:var(--sub)}
+.meter b{font-family:var(--num);font-weight:400;font-size:var(--t1);line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+.meter b .unit{font-family:var(--jp);font-size:var(--t3)}
+.bar{margin-top:24px;height:2px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ink)}
+.found{margin-top:24px;font-size:var(--t4);color:var(--sub);min-height:24px}
+.found b{color:var(--text);font-weight:400;font-size:var(--t3)}
+
+.empty{margin-top:64px;text-align:center;font-size:var(--t4);color:var(--sub);line-height:1.8}
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 16px;border-radius:var(--r);font-size:var(--t4);white-space:nowrap}
+.toast.top{bottom:auto;top:48px}
+
+/* カードの中の2つの入口 */
+.cb{display:block;width:100%;color:#fff;border-radius:8px}
+.cb:active{background:rgba(255,255,255,.06)}
+.cb>.k{display:block}
+.cb .n{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+.cb .n small{margin-left:auto}
+.cb .chev{color:rgba(255,255,255,.6);align-self:center}
+.cb2{border-top:1px solid rgba(255,255,255,.14);padding-top:16px}
+.cb2 .vs{border-top:0;padding-top:0;display:grid}
+.cb2 .vs b{display:inline-flex;align-items:center;gap:8px}
+
+/* 会員カードの図 */
+.pc{margin:24px 0 0}
+.pc figcaption{font-size:var(--t4);color:var(--sub);font-weight:600;letter-spacing:.04em}
+.pc-card{margin-top:8px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:var(--r);padding:16px}
+.pc.fut .pc-card{border-left-color:#CFCCC4}
+.pc.warn .pc-card{border-left-color:var(--accent)}
+.pc-h{display:flex;justify-content:space-between;gap:16px;font-size:var(--t4);color:var(--sub);padding-bottom:8px;border-bottom:1px solid var(--line)}
+.pc-h span:first-child{color:var(--ink);font-weight:600}
+.pr{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.pr:last-child{border-bottom:0}
+.pr span{font-size:var(--t4);color:var(--sub)}
+.pr b{font-size:var(--t3);font-weight:600;color:var(--ink);word-break:auto-phrase}
+.pr.empty b{color:#B4B2AB;font-weight:400}
+.pr.empty b small{font-size:var(--t4);margin-left:8px}
+.pr.hit b,.pr .ovr{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:4px}
+.pr.other b{font-size:var(--t4);font-weight:400;color:var(--text)}
+.pc-c{margin-top:8px;padding-top:8px;border-top:1px solid var(--ink)}
+.pc-ct{font-size:var(--t4);color:var(--sub);font-weight:600;padding-bottom:4px}
+.ck{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:8px 0;align-items:center}
+.ck span{font-size:var(--t4);color:var(--sub)}
+.ck b{display:inline-flex;align-items:center;gap:4px;font-size:var(--t3);font-weight:600;color:var(--ink)}
+.ck svg{width:16px;height:16px}
+.pc-f{margin-top:8px;font-size:var(--t3);font-weight:600;color:var(--ink);word-break:auto-phrase}
+.pc.warn .pc-f{color:var(--accent)}
+
+.primary:disabled{opacity:.35;cursor:default}
+
+/* 渡した項目を直す */
+.fixbtn{min-height:40px;justify-content:flex-start;padding:0;color:var(--ink);text-decoration:underline;text-underline-offset:4px;font-size:var(--t4);margin-top:8px;width:auto}
+.pr .mine{display:inline-block;font-size:var(--t4);font-weight:400;color:var(--sub);margin-left:8px;padding:0 8px;border:1px solid var(--line);border-radius:var(--r)}
+.pr.ed{display:block}
+.tri{display:grid;grid-template-columns:repeat(3,1fr);margin-top:4px;border:1px solid #CFCCC4;border-radius:var(--r);overflow:hidden}
+.tri button{min-height:40px;font-size:var(--t4);color:var(--sub);text-align:center}
+.tri button+button{border-left:1px solid #CFCCC4}
+.tri button[aria-pressed="true"]{background:var(--ink);color:#fff;font-weight:600}
+
+/* 会社を追加 */
+.dh-row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.addbtn{font-size:var(--t4);color:var(--ink);white-space:nowrap;min-height:40px;padding-left:8px}
+.checks{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.chk{display:flex;align-items:center;gap:8px;min-height:48px;border-bottom:1px solid var(--line);font-size:var(--t3)}
+.chk input,.sel input{width:20px;height:20px;accent-color:var(--ink);margin:0;flex:none}
+
+/* まとめて選ぶ */
+.selrow{grid-template-columns:1fr auto 32px}
+.sel{display:flex;align-items:center;gap:12px;min-width:0;cursor:pointer}
+.go{display:flex;align-items:center;justify-content:flex-end;min-height:40px}
+
+/* 引っ越し・姓が変わったとき */
+.mv-ok{margin-top:24px;padding:16px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:var(--r)}
+.mv-ok .k{font-size:var(--t4);color:var(--sub);font-weight:600}
+.mv-ok .big{font-size:var(--t2);font-weight:600;color:var(--ink);margin-top:4px}
+.mv-ok .names{font-size:var(--t4);color:var(--ink);margin-top:8px}
+.donemsg{display:flex;align-items:center;gap:8px;font-size:var(--t3);font-weight:600;color:var(--ink)}
+.donemsg svg{width:16px;height:16px}
+.mvrow{grid-template-columns:1fr auto}
+.go2{min-width:0}
+.mark{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 12px;font-size:var(--t4);border:1px solid #CFCCC4;border-radius:var(--r);color:var(--ink);background:var(--surface);white-space:nowrap}
+.mark.on{border-color:var(--ink);font-weight:600}
+.mark svg{width:14px;height:14px}
+
+/* カードの中の項目の列（塗り＝渡した／点線＝渡していない） */
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.chips i{font-style:normal;font-size:var(--t4);line-height:1;padding:4px 8px;border-radius:var(--r);background:rgba(255,255,255,.92);color:var(--ink)}
+.chips.none i{background:transparent;color:rgba(255,255,255,.45);border:1px dashed rgba(255,255,255,.4);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.35)}
+.chips em{font-style:normal;font-size:var(--t4);color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:4px;margin-left:4px}
+.chips em svg{width:14px;height:14px}
+</style>
+</head>
+<body>
+<div id="demo-banner" role="region" aria-label="このページについて">
+  <div class="in">
+    <p><b>デモ（架空のデータ）です。</b>実在の会社・人物とは関係ありません。メールは読み取りません。『本人確認だけの会社』は構想段階の機能です。</p>
+    <nav aria-label="デモの操作">
+      <a href="../">トップへ戻る</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <button type="button" id="restart">最初から見る</button>
+    </nav>
+  </div>
+</div>
+<div class="phone">
+  <main class="screen" id="screen"></main>
+  <nav class="tabbar" id="tabbar" aria-label="メニュー"></nav>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+<script>
+/* ===== データ（すべて架空）。会社名・人名・件数は実在のものと関係ありません ===== */
+const USER="山田 太郎";
+const MAIL="yamada.taro@mail.example";
+const TODAY="2026-10-11";
+const LAST_LOGIN="2026年10月9日 21:14";
+const MAILS=2184;
+
+// これまで：[会社, 分野, 経緯(|区切り。先頭!は漏えい), 渡したと思われるもの, 確からしさ(1=メールに証拠あり/2=推定), 状態(leak/gone/law), まとめた社数]
+const D=[
+["ノリカ カーシェア","カーシェア","2021-06 会員登録|2022-10 退会|2024-05 運転免許証の登録完了（再入会と思われる）|!2026-10-07 不正アクセスによる個人情報の漏えいに関するお詫び","氏名・住所・電話・生年月日・運転免許証・カード",1,"leak"],
+["ツバサ トラベル","航空券予約","!2026-10-08 不正アクセスによる情報流出のお詫び","氏名・電話・メール・搭乗者情報・パスワード",2,"leak"],
+["ミモザ ペット損保","ペット保険","2024-05 本登録完了|!2025-10-29 不正アクセスと情報流出の可能性のお詫び|2026-02 再送の案内","氏名・住所・電話・生年月日・支払い情報・ペット情報",1,"leak"],
+["キャリア ステップ","就職","!2023-08 設定の誤りによる漏えいのおそれのお詫び","氏名・学歴・連絡先",2,"leak"],
+["イベント パス","イベント","!2020-11 不正アクセスのお詫び","氏名・メール・パスワード",2,"leak"],
+["デイリー ノート","手帳アプリ","!2019-03 不正アクセスのお詫び","メール・パスワード",2,"leak"],
+["リユース マーケット","フリマ","2024-04 本人確認完了","身分証の写真・氏名・住所・生年月日・口座",1,""],
+["ステイ ホスト","民泊","2025-02 本人確認完了|2026-08 予約","身分証の写真・顔写真・氏名・電話",1,""],
+["グローバル データ通信","海外用の通信","2025-05 本人確認書類の認証","身分証の写真・氏名・生年月日",1,""],
+["ペイリンク","送金・決済","2026-04 本人確認完了","身分証・氏名・住所・生年月日・口座",1,"law"],
+["まいにち食卓便","食材宅配","2025-08 本人確認手続き完了|毎週 注文","身分証・氏名・住所・電話・口座またはカード",1,""],
+["カブノート証券","証券","2023-03 本人確認書類の審査完了","身分証・マイナンバー・口座・勤務先",1,"law"],
+["ツミタテ証券","証券","2023-08 本人確認書類の提示","身分証・マイナンバー・口座",2,"law"],
+["ハレノ ネットバンク","ネットバンク","2022-11 本人確認書類の提出","身分証・氏名・住所・勤務先",1,"law"],
+["ソラマド ネットバンク","ネットバンク","2026-01 本人確認手続きの案内","身分証・氏名・住所",2,"law"],
+["クイック決済","決済","2026-04 本人確認情報の定期確認の依頼","身分証・氏名・住所・生年月日",2,"law"],
+["ヒカリ暗号資産","暗号資産","2026-10 登録情報の確認の依頼","身分証・マイナンバー・口座",2,"law"],
+["マチノ レンタカー","レンタカー","2019-11 会員登録完了","氏名・住所・電話・運転免許証・カード",1,""],
+["資格の学び舎","資格講座","2025-12 本人確認書類の提出依頼","身分証・氏名・住所",2,""],
+["ミツバチカード","カード","2026-05 ウェブ明細の登録","氏名・住所・勤務先・年収・口座",1,"law"],
+["ヒナタカード","カード","2024-07 本人確認|2026-05 登録情報の更新依頼","氏名・住所・勤務先・年収・口座",1,"law"],
+["ルリイロカード","カード","2024-03 カード解約|2024-12 会員IDの登録|2025-08 カード解約","氏名・住所・勤務先・年収・口座",1,"gone law"],
+["ハヤテカード","カード","2022-01 退会（解約）","氏名・住所・勤務先・年収・口座",1,"gone law"],
+["タビノワ旅行","旅行","2026-08 新規会員登録","氏名・住所・電話・生年月日・旅券",1,""],
+["ツバメ マイレージ","航空","2026-03 会員登録","氏名・住所・電話・生年月日",1,""],
+["ステイ リザーブ","宿泊予約","2026-05 予約確認書（以降も予約）","氏名・電話・カード",2,""],
+["ホテル予約ネット","宿泊予約","2026-08 予約完了","氏名・電話・カード",2,""],
+["ソラとやどパック","旅行","2026-10 予約と取消","氏名・住所・電話・生年月日・カード",2,""],
+["ホテル ミズカガミ","ホテル","2026-10 会員登録完了","氏名・住所・電話・生年月日",1,""],
+["タビドコ","旅行","2025-10 認証番号の通知","氏名・住所・電話",2,""],
+["モリノ キャンプフィールド","キャンプ","2026-08 予約完了","氏名・住所・電話",2,""],
+["ほしぞらオートキャンプ場","キャンプ","2024-04 会員登録","氏名・住所・電話",1,""],
+["リゾートホテル ナギサ","ホテル","2023-10 予約利用者の登録","氏名・住所・電話",1,""],
+["ペットと泊まれる宿","ペット同伴の宿","2023-03 登録完了","氏名・電話・ペット情報",1,""],
+["トラベル プリペイド","旅行プリペイド","2026-04 登録","氏名・旅券・カード",1,""],
+["ペットシッターの派遣","ペットシッター","2026-10-10 予約・問い合わせ","氏名・住所・電話・合鍵の受け渡し",2,""],
+["美容室 コモレビ","美容室","2026-09 予約","氏名・電話",2,""],
+["ビューティー予約","美容予約","2026-07 予約（以降も予約）","氏名・電話・生年月日",2,""],
+["シッポ損害保険","ペット保険","2023-03 ペットの名前の登録完了","氏名・住所・口座・ペット情報",1,""],
+["市の動物愛護センター","自治体","2024-08 犬の登録完了","氏名・住所・電話",1,""],
+["マイクロチップの登録窓口","ペット","2023-03 登録完了|2024-08 本人確認番号の連絡","氏名・住所・電話・ペット情報",1,""],
+["開業届の作成サービス","事業","2024-02 新規登録完了","氏名・住所・生年月日・事業内容",1,""],
+["メガネのミエル","眼鏡","2026-08 アカウント登録","氏名・住所・電話・視力",1,""],
+["洋菓子のモモヤ","菓子","2026-04 会員登録","氏名・メール・生年月日",1,""],
+["オウエン ファンディング","クラウドファンディング","2026-05 会員登録","氏名・住所・電話・カード",1,""],
+["小動物用品の専門店","ペット用品","2026-03 登録完了","氏名・住所・電話",1,""],
+["スポーツ大会エントリー","大会の申込","2026-07 メンバー登録と注文","氏名・住所・電話・生年月日・性別",1,""],
+["共通ポイントカード","ポイント","2026-08 利用登録","氏名・住所・電話・生年月日",1,""],
+["家電量販のヒロバ","家電","2024-09 会員登録完了","氏名・住所・電話",1,""],
+["作業服の専門店","作業着","2024-09 会員登録完了","氏名・住所・電話・カード",1,""],
+["会員制の倉庫店","量販店","2023-05 会員の新規登録","氏名・住所・電話・顔写真・カード",1,""],
+["商業施設のポイント","ポイント","2024-09 会員登録","氏名・住所・電話・生年月日",1,""],
+["暮らしの通販","通販","2024-11 会員登録完了","氏名・住所・電話",1,""],
+["住まいの部品の通販","通販","2024-07 マイページ登録","氏名・住所・電話",1,""],
+["飲食店のアプリ 7社","飲食","2024-06〜2026-07 定食・焼肉・ハンバーガー・コンビニ・パン・菓子の店","メール・生年月日",1,"",7],
+["ゴルフ場予約サイト","ゴルフ","2022-07 会員登録|2026-06 ログインIDの確認","氏名・住所・電話・生年月日",1,""],
+["ゴルフ用品の通販","ゴルフ","2026-04 会員登録","氏名・住所・電話・生年月日",1,""],
+["ゴルフ場グループ","ゴルフ","2026-07 予約（以降も予約）","氏名・電話・生年月日",2,""],
+["市民ゴルフ場","ゴルフ","2026-03 ウェブ会員の申込","氏名・住所・電話",1,""],
+["レディースゴルフ倶楽部","ゴルフ","2026-01 会員登録","氏名・住所・電話・生年月日",1,""],
+["国家資格の試験","試験","2025-10 マイページ登録","氏名・住所・生年月日・顔写真",1,""],
+["監査の協会","協会","2026-06 会員登録","氏名・勤務先・連絡先",1,""],
+["データ分析の協会","協会","2023-04 マイページ登録","氏名・勤務先・連絡先",1,""],
+["お金の検定","検定","2024-03 マイページ登録","氏名・住所・生年月日",1,""],
+["広告の紹介サービス","広告の紹介","2026-09 メディア登録","氏名・住所・口座",1,""],
+["AI人材の紹介","人材","2025-11 会員登録","氏名・経歴・連絡先",1,""],
+["くじの公式サイト","くじ","2026-01 会員登録","氏名・住所・口座",1,""],
+["駅前の24時間ジム","ジム","2026-05 退会","氏名・住所・電話・カード・顔写真",1,"gone"],
+["フィットネスクラブ","ジム","2024-12 会員登録|2025-02 退会","氏名・住所・電話・カード",1,"gone"],
+["ペットの少額短期保険","ペット保険","2025-08 解約|2025-09 解約","氏名・住所・口座・ペット情報",1,"gone"],
+["都市ガスの小売","ガス","2024-10 解約","氏名・住所・口座",1,"gone"],
+["動画配信サービス","動画","2024-08 登録|2024-08 解約","メール・カード",1,"gone"],
+["アーティストのファンクラブ","ファンクラブ","2024-07 登録|2024-07 退会","氏名・住所・カード",1,"gone"],
+["日記アプリ","アプリ","2024-04 登録|2024-04 退会・削除","メール・氏名",1,"gone"],
+["光回線の事業者","回線","2022-01 解約","氏名・住所・電話・口座",1,"gone"],
+["鉄道のネット予約","鉄道予約","2019-07 会員登録|2021-09 自動退会","氏名・住所・電話・カード",1,"gone"],
+["テレビ局の会員ID","動画","2019-12 退会","メール・生年月日",1,"gone"],
+["雑誌の読み放題","雑誌","2018-10 解約","メール・カード",1,"gone"],
+["映画の配信サービス","動画","2018-01 退会","氏名・メール・カード",1,"gone"],
+["不動産会社のインターン","インターン応募","2017-06 顔写真の登録完了","氏名・顔写真・学歴・連絡先",1,""],
+["夜行バスの予約","高速バス","2017-02 新規登録","氏名・電話",1,""],
+["暮らしのアプリ","アプリ","2017-06 登録完了","氏名・連絡先",1,""],
+["鉄道会社の会員サイト","鉄道","2017-12 会員登録","氏名・住所・電話",1,""],
+["運送会社の会員サイト","配送","2019-06 ウェブサービスの登録","氏名・住所・電話",1,""],
+["高速バスの予約サイト","高速バス","2019-05 会員登録","氏名・電話",1,""],
+["コンタクトレンズの販売店","コンタクトレンズ","2019-10 ウェブ登録","氏名・住所・電話・視力",1,""],
+["ライナーバス","高速バス","2020-01 新規登録","氏名・電話",1,""],
+["バスの比較予約サイト","高速バス","2020-03 会員登録","氏名・電話・カード",1,""],
+["ビジネス動画講座","学び","2020-04 支払い情報の登録","氏名・カード",1,""],
+["オンライン講座","学び","2020-04 登録完了","氏名・メール",1,""],
+["ネットショップ作成サービス","ネットショップ作成","2020-05 仮登録","氏名・住所・口座",2,""],
+["駅の個室ワークブース","作業ブース","2020-07 会員登録","氏名・電話・カード",2,""],
+["コーヒーチェーン","飲食","2020-10 会員登録","氏名・メール・生年月日",2,""],
+["家具のスミカ","家具","2021-01 会員登録","氏名・住所・電話",2,""],
+["引越し手続きの窓口サイト","引越しの手続き","2021-02 新規登録","氏名・新旧の住所・電話（各社へ転送）",2,""],
+["ポケットWi-Fiのレンタル","通信機器のレンタル","2021-02 お客様情報の登録","氏名・住所・電話・カード",1,""],
+["宅配便の会員サイト","配送","2021-02 登録完了","氏名・住所・電話",1,""],
+["セレクトショップ ヌノ","衣料","2021-03 会員登録完了","氏名・住所・電話・生年月日",1,""],
+["お弁当の予約サイト","飲食","2021-11 会員登録|2021-12 会員登録","氏名・電話・メール",1,""],
+["口コミサイト","口コミ","2021-12 ユーザー登録","メール・ニックネーム",1,""],
+["ふるさと納税サイト","ふるさと納税","2021-12 会員登録完了","氏名・住所・電話・カード（寄附先の自治体にも渡る）",1,""],
+["地域のアプリ","アプリ","2021-12 本登録完了","氏名・連絡先",1,""],
+["電子書籍ストア","電子書籍","2021-12 会員登録","氏名・メール・カード",2,""]
+];
+const HIDDEN=6;
+
+// 企業・当局の公表から取得した、漏えいの可能性（架空）。報道だけの段階では知らせない。一覧の会社名で照合（端末の中）
+const SRC="企業の公表あり・お客さまが対象かは未確定";
+const NEWS={
+ "ステイ リザーブ":{date:"2026-10-09",what:"氏名・電話・メール・カード番号の一部",note:"予約システムへの不正アクセスがあったと公表されました。対象の人数と範囲は調査中です。"},
+ "暮らしの通販":{date:"2026-10-06",what:"氏名・住所・電話・メール・パスワード",note:"会員情報が外部に流出したおそれがあると公表されました。会社は事実関係を調査中です。"}
+};
+
+// 構想：MyDataGuardで本人確認したときにお預かりする情報（架空）：[項目, 確認・更新した日, 補足]
+const IDP=[
+ ["氏名","2026-04-02",""],
+ ["住所","2026-08-20","お引っ越しで変更"],
+ ["生年月日","2026-04-02",""],
+ ["顔写真","2026-04-02",""],
+ ["電話番号","2026-04-02",""]
+];
+const IDP_DATE="2026-04-02";
+
+// 会員カードの図に出す、お客さまの情報（架空）
+const ME={name:USER,addr:"〒123-4567 みどり市さくら町1-2-3",phone:"090-1234-5678",birth:"1994年6月14日"};
+
+// 構想：情報を渡さずに使えている会社（架空）。相手に届くのは、MyDataGuardが確かめた結果（印）だけ
+// checks：[項目, 結果]。会員カードの図の下段に「確認の印」として出す
+const VIA="MyDataGuard経由";
+const C=[
+ {n:"ミナモ",c:"フリマ",since:"2026-05-20",last:"2026-10-02",until:"会員でいるあいだ",
+  checks:[["本人確認","済み"],["18歳以上","はい"],["お届け先",VIA],["ご連絡",VIA]],
+  how:["お届けには配送番号だけを使います。住所を見るのは運送会社だけです。"],
+  log:["2026-10-02 発送：配送番号で運送会社へ","2026-08-11 取引のご連絡をMyDataGuard経由で受け取り","2026-05-20 会員登録：本人確認と18歳以上をMyDataGuardで確認"]},
+ {n:"サロン ミルテ",c:"美容室の予約",since:"2026-06-14",last:"2026-10-05",until:"ご来店日の7日後まで",
+  checks:[["本人確認","済み"],["ご連絡",VIA]],
+  how:["予約の確認と変更のご連絡は、MyDataGuardを通して届きます。"],
+  log:["2026-10-05 予約：受付番号で予約","2026-06-14 初めての予約：本人確認をMyDataGuardで確認"]},
+ {n:"サケノワ",c:"お酒の通販",since:"2026-07-03",last:"2026-09-18",until:"返品の期限まで",
+  checks:[["20歳以上","はい"],["お届け先",VIA]],
+  how:["お届けには配送番号だけを使います。住所を見るのは運送会社だけです。"],
+  log:["2026-09-18 発送：配送番号で運送会社へ","2026-07-03 初めての注文：20歳以上をMyDataGuardで確認"]},
+ {n:"カグラク",c:"家具の月額レンタル",since:"2026-09-01",last:"2026-09-01",until:"ご契約が終わるまで",
+  checks:[["本人確認","済み"],["お届け先",VIA],["ご連絡",VIA]],
+  how:["お届けには配送番号だけを使います。住所を見るのは運送会社だけです。"],
+  log:["2026-09-01 申込：本人確認をMyDataGuardで確認"]}
+];
+/* ===== データここまで ===== */
+
+const KEY=["身分証","運転免許証","マイナンバー","顔写真","旅券"];
+const isLeak=d=>d[5].includes("leak"), isID=d=>KEY.some(k=>d[3].includes(k)), isGone=d=>d[5].includes("gone"), isLaw=d=>d[5].includes("law");
+const n=d=>d[6]||1, sum=f=>D.filter(f).reduce((a,d)=>a+n(d),0);
+const isMaybe=d=>S.watch&&!!NEWS[d[0]]&&!isLeak(d), isAlert=d=>isLeak(d)||isMaybe(d);
+const leakDate=d=>{if(isMaybe(d))return NEWS[d[0]].date;const m=d[2].match(/!([\d-]+)/g);return m?m[m.length-1].slice(1):"";};
+const years=d=>(d[2].match(/\d{4}/g)||[]).map(Number);
+const firstYear=d=>Math.min(...years(d)), lastYear=d=>Math.max(...years(d));
+// 最後の記録から3年以上たっている会社（法律で保存の会社は、消してもらう依頼の対象にしないので除く）
+const IDLE_Y=3, isIdle=d=>(+TODAY.slice(0,4))-lastYear(d)>=IDLE_Y&&!isLaw(d);
+const FILTERS=[["すべて",()=>true],["漏えい",isAlert],["しばらく使っていない",isIdle],["身分証",isID],["退会済み",isGone],["法律で保存",isLaw]];
+// 手で足すと会社が増えるので、件数は数え直せるようにしておく
+let total=sum(()=>true)+HIDDEN;
+const recount=()=>{total=sum(()=>true)+HIDDEN;};
+const ymd=s=>{const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${+m[1]}年${+m[2]}月${+m[3]}日`:s;};
+const md=s=>{const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${+m[2]}月${+m[3]}日`:s;};
+const fmt=x=>x.toLocaleString("ja-JP");
+const RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+// fix：ご自身で直した項目／edit：直している途中の内容／mv：引っ越し・改姓の「済み」／idMv：MyDataGuard側の変更（構想）／sel：まとめて依頼する会社
+const S0=()=>{const mv={"住所":{},"氏名":{} };return {tab:"list",view:"past",filter:"すべて",req:{},stopped:{},just:null,landed:false,linked:false,watch:true,fix:{},edit:null,mv,mvKind:"住所",idMv:{},sel:null};};
+let S=S0();
+const $=id=>document.getElementById(id);
+const ESC_MAP={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>ESC_MAP[c]);
+const active=()=>C.filter((c,j)=>!S.stopped[j]).length;
+const N=(v,u)=>`<span class="num">${v}</span><span class="unit">${u}</span>`;
+const SURE={1:"メールに証拠あり",2:"推定",3:"ご自身で追加"};
+const REQ_TITLE={ask:"何を持っているか聞く",check:"対象かどうか問い合わせる"};
+const REQ_KIND={ask:"何を持っているかの問い合わせ",check:"漏えいの対象かどうかの問い合わせ"};
+
+const ICON={
+ chev:'<svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"/></svg>',
+ back:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10 3.5L5.5 8 10 12.5"/></svg>',
+ mark:'<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="4" fill="#13223A"/><path d="M5 7.5h10M5 10h10M5 12.5h6" stroke="#fff" stroke-width="1.2"/></svg>',
+ lock:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.5" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>',
+ list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3.5" width="16" height="17" rx="2"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg>',
+ req:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg>',
+ promise:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l7 2.8v5.2c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6.3z"/><path d="M9 12l2 2 4-4"/></svg>',
+ eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 5.5h14M5 9.5h14M5 13.5h8"/><path d="M15 17l2 2 3-3.5"/></svg>',
+ phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="2"/><path d="M10.5 18h3"/></svg>',
+ off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h7"/></svg>'
+};
+
+// top=true のときは画面の上（ヘッダーの位置）に短く出す。ホームの「対応が必要なこと」に重ねない
+function toast(t,top){const e=$("toast");e.textContent=t;e.classList.toggle("top",!!top);e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>e.hidden=true,top?1600:2000);}
+let first=true;
+function render(html,opt){
+  opt=opt||{};
+  const sc=$("screen");
+  sc.className="screen"+(first||opt.still||RM?"":" anim")+(opt.bare?" bare":"");
+  first=false;
+  sc.innerHTML=html;sc.scrollTop=0;
+  if(opt.bare){$("tabbar").hidden=true;} else {$("tabbar").hidden=false;tabbar();}
+}
+const TABS=[["list","ホーム"],["req","依頼"],["promise","方針"]];
+function tabbar(){
+  const c=Object.keys(S.req).length;
+  $("tabbar").innerHTML=TABS.map(([k,l])=>
+   `<button data-t="${k}" ${S.tab===k?'aria-current="page"':''}>${ICON[k]}<span>${l}${k==="req"&&c?`<span class="num">${c}</span>`:""}</span></button>`).join("");
+  const go={list:()=>K0(),req:()=>KQ(),promise:()=>K7()};
+  $("tabbar").querySelectorAll("button").forEach(b=>b.onclick=()=>go[b.dataset.t]());
+}
+function flash(sel){
+  const el=$("screen").querySelector(sel);
+  if(!el) return;
+  el.classList.add("just");
+  $("screen").scrollTop=Math.max(0,el.offsetTop-160);
+}
+const head=()=>`<div class="hd"><span class="brand">${ICON.mark}MyDataGuard<span class="brand-sub">デモ</span></span><span class="safe">${ICON.lock}この端末の中で表示</span></div>`;
+function status(d,i){
+  if(S.req[i]) return `<span class="st on">依頼中</span>`;
+  if(isLeak(d)) return `<span class="st hot"><span class="dot"></span>漏えい通知</span>`;
+  if(isMaybe(d)) return `<span class="st hot"><span class="ring"></span>可能性</span>`;
+  if(isGone(d)) return `<span class="st">退会済み</span>`;
+  if(isLaw(d)) return `<span class="st">法律で保存</span>`;
+  if(isID(d)) return `<span class="st">身分証</span>`;
+  return `<span class="st"></span>`;
+}
+const answers=c=>c.checks.filter(g=>g[1]!==VIA).map(g=>`${g[0]} ✓`).join("　");
+
+/* ---------- 会員カードの図：「この会社からは、お客さまがこう見えています」
+   どの画面でも同じ枠・同じ5項目の並び。埋まっている（情報を渡した）／空いている（渡していない）の差で見せる ---------- */
+const PF=[["氏名",t=>t.includes("氏名"),()=>ME.name],["住所",t=>t.includes("住所"),()=>ME.addr],["電話番号",t=>t.includes("電話")||t.includes("連絡先"),()=>ME.phone],["生年月日",t=>t.includes("生年月日"),()=>ME.birth],["身分証の写し",t=>KEY.some(k=>t.includes(k)),t=>KEY.filter(k=>t.includes(k)).join("・")]];
+const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+const TRI=[["yes","渡した"],["no","渡していない"],["unk","分からない"]];
+// 会社ごとの5項目の状態。推定（メールの件名と業種から）を初期値に、ご自身で直した内容を上書きする
+function fieldsOf(i){
+  const d=D[i], toks=d[3].split("・"), fx=S.fix[i]||{};
+  return PF.map(([l,has,val])=>{const t=toks.filter(x=>has(x));const st=fx[l]||(t.length?"yes":"no");
+    const v=st==="yes"?(t.length?val(t.join("・")):(l==="身分証の写し"?"身分証":val(""))):"";
+    return {l:l,st:st,v:v,mine:!!fx[l]};});
+}
+// 公表された「漏れた可能性があるもの」に、その項目が含まれるか
+const HIT_ALIAS={"電話番号":"電話","身分証の写し":"身分証"};
+const hitLabel=(nw,l)=>nw.what.includes(HIT_ALIAS[l]||l);
+// mode: "past"（渡した。推定）/ "future"（渡していない＋確認の印）/ "idp"（MyDataGuardがお預かりする情報。構想）
+function pcard(o){
+  let rows="", other="";
+  if(o.mode==="past"){
+    const toks=o.items.split("・");
+    rows=o.fields.map(f=>{
+      if(o.edit){const cur=(S.edit.tmp[f.l])||f.st;
+        return `<div class="pr ed"><span>${f.l}</span><span class="tri" role="group" aria-label="${f.l}">${TRI.map(([v,t])=>`<button data-fl="${f.l}" data-v="${v}" aria-pressed="${cur===v}">${t}</button>`).join("")}</span></div>`;}
+      const hit=f.st==="yes"&&o.hitL&&o.hitL(f.l);
+      const mine=f.mine?`<small class="mine">ご自身で確認</small>`:"";
+      if(f.st==="yes") return `<div class="pr${hit?" hit":""}"><span>${f.l}</span><b>${esc(f.v)}${mine}</b></div>`;
+      if(f.st==="unk") return `<div class="pr empty"><span>${f.l}</span><b>分からない${mine}</b></div>`;
+      return `<div class="pr empty"><span>${f.l}</span><b>―${mine}</b></div>`;}).join("");
+    const rest=toks.filter(x=>!PF.some(p=>p[1](x)));
+    if(rest.length) other=`<div class="pr other"><span>ほかに</span><b>${rest.map(x=>`<span class="${o.hit&&o.hit(x)?"ovr":""}">${esc(x)}</span>`).join("・")}</b></div>`;
+  } else if(o.mode==="future"){
+    rows=PF.map(([l])=>`<div class="pr empty"><span>${l}</span><b>―<small>知らせていません</small></b></div>`).join("");
+  } else {
+    rows=PF.map(([l,,val])=>`<div class="pr"><span>${l}</span><b>${l==="身分証の写し"?"顔写真・本人確認書類":esc(val(""))}</b></div>`).join("");
+  }
+  const checks=o.checks?`<div class="pc-c"><div class="pc-ct">MyDataGuardが確かめた結果</div>${o.checks.map(g=>`<div class="ck"><span>${g[0]}</span><b>${g[1]===VIA?"":CHECK}${esc(g[1])}</b></div>`).join("")}</div>`:"";
+  return `<figure class="pc${o.mode==="future"?" fut":""}${o.warn?" warn":""}" aria-label="${esc(o.cap)}">
+    <figcaption>${o.cap}</figcaption>
+    <div class="pc-card">
+      <div class="pc-h"><span>${esc(o.who)}</span><span>${o.tag}</span></div>
+      ${rows}${other}${checks}
+    </div>
+    ${o.foot?`<p class="pc-f">${o.foot}</p>`:""}
+  </figure>`;
+}
+
+/* ---------- はじめに：メールの読み取り ---------- */
+function KS(){
+  render(`
+  ${head()}
+  <div class="intro">
+    <div class="k">はじめに</div>
+    <h1>お使いのメールから、お客さまの情報を渡してきた会社を探します</h1>
+  </div>
+  <ul class="steps">
+    <li>${ICON.eye}<div><b>読むのは、件名・差出人・日付だけです</b><span>「会員登録」「本人確認」「退会」「漏えい」などの手がかりを探します。本文は読みません。</span></div></li>
+    <li>${ICON.phone}<div><b>結果は、この端末の中だけに置きます</b><span>メールも、見つかった会社の一覧も、運営者のサーバーには送りません。</span></div></li>
+    <li>${ICON.off}<div><b>読み取りは、いつでも止められます</b><span>止めると、見つかった会社の一覧も消せます。</span></div></li>
+  </ul>
+  <div class="box">
+    <div class="acct"><div><span class="k">読み取るメール（架空）</span><b>お使いのメール</b><span class="num">${MAIL}</span></div></div>
+    ${watchOpt()}
+  </div>
+  <div class="cta">
+    <button class="primary" id="go">メールの読み取りを始める</button>
+    <p class="sub-cta">デモでは架空のメールを使います。お使いのメールは読みません。</p>
+  </div>`,{bare:true});
+  $("go").onclick=KL;
+  bindWatch(KS);
+}
+
+function watchOpt(){
+  return `<div class="opt"><div><b>漏えい情報の見守り</b><p>企業・当局の公表と照らし合わせます。照らし合わせはこの端末の中で行い、お客さまの一覧は外に送りません。</p></div>
+  <button class="sw" id="sw" role="switch" aria-checked="${S.watch}" aria-label="漏えい情報の見守り"></button></div>`;
+}
+function bindWatch(again){$("sw").onclick=()=>{S.watch=!S.watch;const y=$("screen").scrollTop;again();$("screen").scrollTop=y;};}
+
+/* ---------- 読み取り中（演出。実際には何も読まない） ---------- */
+function KL(){
+  render(`
+  ${head()}
+  <div class="scan">
+    <h1>メールを確認しています</h1>
+    <p class="hint">件名・差出人・日付だけを、この端末の中で読んでいます。${S.watch?"企業・当局の公表とも、この端末の中で照らし合わせます。":""}（デモでは架空のメールです）</p>
+  </div>
+  <div class="meter">
+    <div><span>確認したメール</span><b><span id="m" class="num">0</span><span class="unit">通</span></b></div>
+    <div><span>見つかった会社</span><b><span id="f" class="num">0</span><span class="unit">社</span></b></div>
+  </div>
+  <div class="bar"><i id="bar"></i></div>
+  <p class="found" id="fd" aria-live="off"></p>`,{bare:true});
+  const done=()=>{S.linked=true;S.landed=true;S.tab="list";K0();};
+  if(RM){$("m").textContent=fmt(MAILS);$("f").textContent=total;$("bar").style.width="100%";setTimeout(done,700);return;}
+  const T=3200, t0=performance.now(), names=D.map(d=>d[0]);
+  let last=-1;
+  const step=now=>{
+    if(!$("m")) return;
+    const p=Math.min(1,(now-t0)/T), e=1-Math.pow(1-p,2);
+    $("m").textContent=fmt(Math.round(MAILS*e));
+    $("f").textContent=Math.round(total*e);
+    $("bar").style.width=(p*100)+"%";
+    const k=Math.min(names.length-1,Math.floor(e*names.length));
+    if(k!==last&&k%3===0){last=k;$("fd").innerHTML=`見つかりました　<b>${esc(names[k])}</b>`;}
+    if(p<1) setTimeout(()=>step(performance.now()),33); else setTimeout(done,500);
+  };
+  step(performance.now());
+}
+
+/* ---------- ホーム ---------- */
+function K0(){
+  S.tab="list";
+  // 要対応：依頼を出していない漏えいの知らせ。身分証を渡した会社の通知を先頭に、あとは新しい順。ホームには3件まで
+  const al=D.map((d,i)=>[d,i]).filter(([d,i])=>isAlert(d)&&!S.req[i])
+    .sort((a,b)=>((isLeak(b[0])&&isID(b[0]))-(isLeak(a[0])&&isID(a[0])))||(leakDate(b[0])>leakDate(a[0])?1:leakDate(b[0])<leakDate(a[0])?-1:0));
+  const top=al.slice(0,3), rest=al.length-top.length;
+  const landed=S.landed; S.landed=false;
+  // 内訳：[表示名, 判定, 印, 一覧の絞り込み]
+  const BD=[["漏えい通知",isLeak,"dot","漏えい"],["漏えいの可能性",isMaybe,"ring","漏えい"],["身分証を渡した",isID,"","身分証"],["退会後も残っている",isGone,"","退会済み"],["法律で保存",isLaw,"","法律で保存"]].filter(b=>b[0]!=="漏えいの可能性"||S.watch);
+  render(`
+  ${head()}
+  <div class="who"><b>${USER} 様</b><span>前回ログイン ${LAST_LOGIN}</span></div>
+  <section class="card" aria-label="お客さまの情報の在りか">
+    <button class="cb" id="toPast">
+      <span class="k">個人情報を渡している会社</span>
+      <span class="n"><b>${total}<span class="unit">社</span></b><small>${landed?`メール${fmt(MAILS)}通から`:`${ymd(TODAY)}現在`}</small>${ICON.chev}</span>
+      <span class="chips" aria-label="氏名・住所・電話番号・生年月日・身分証の写しを渡している">${["氏名","住所","電話番号","生年月日","身分証"].map(x=>`<i>${x}</i>`).join("")}</span>
+    </button>
+    <button class="cb cb2" id="toFut">
+      <span class="vs"><span class="k">本人確認だけの会社（構想）</span><b>${active()}<span class="unit">社</span>${ICON.chev}</b></span>
+      <span class="chips none" aria-label="氏名・住所・電話番号・生年月日・身分証の写しは渡していない">${["氏名","住所","電話番号","生年月日","身分証"].map(x=>`<i>${x}</i>`).join("")}<em>${CHECK}MyDataGuardで本人確認</em></span>
+    </button>
+  </section>
+
+  <section><h2 class="sec">対応が必要なこと${al.length?`<span class="num">　${al.length}</span>件`:""}</h2>
+  ${al.length?`<div class="list">${top.map(([d,i])=>{const mb=isMaybe(d);return `<button class="row" data-i="${i}" data-from="home"><span class="nm"><span class="lab"><span class="${mb?"ring":"dot"}"></span>${esc(d[0])}</span><span class="meta">${mb?`企業が公表（${md(leakDate(d))}）`:`お詫びが届きました（${md(leakDate(d))}）`}</span></span><span class="act">${mb?"対象か確かめる":"消してもらう"}</span>${ICON.chev}</button>`;}).join("")}
+  ${rest?`<button class="row more-row" id="more"><span class="nm">ほか${rest}件</span><span class="act"></span>${ICON.chev}</button>`:""}</div>`
+  :`<p class="hint" style="margin-top:16px">いま対応が必要なことはありません。</p>`}
+  </section>
+
+  <section><h2 class="sec">個人情報を渡している会社の内訳</h2>
+    <div class="list">${BD.map(b=>`<button class="row tight" data-f="${b[3]}"><span class="nm"><span class="lab">${b[2]?`<span class="${b[2]}"></span>`:`<span class="nomark"></span>`}${b[0]}</span></span><span class="cnt">${N(sum(b[1]),"社")}</span>${ICON.chev}</button>`).join("")}</div>
+  </section>
+
+  <section><h2 class="sec">お手続き</h2>
+    <div class="list"><button class="row tight" id="move"><span class="nm">引っ越し・姓が変わったとき</span><span class="cnt"></span>${ICON.chev}</button></div>
+  </section>`,{still:landed});
+  $("move").onclick=()=>KMove();
+  if(landed) toast(`メールから${total}社が見つかりました`,true);
+  document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{S.kdFrom="home";KD(+b.dataset.i);});
+  document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;S.q="";S.sel=null;KL2();});
+  if($("more")) $("more").onclick=()=>{S.filter="漏えい";S.q="";S.sel=null;KL2();};
+  // カードの2つの数字が、そのまま2つの一覧への入口
+  $("toPast").onclick=()=>{S.filter="すべて";S.q="";S.sel=null;KL2();};
+  $("toFut").onclick=()=>KF();
+}
+
+/* ---------- すべての会社（一覧画面）：検索＋絞り込み＋行（社名と状態1つ） ---------- */
+function KL2(){
+  S.tab="list";
+  render(`
+  <button class="back" id="bk">${ICON.back}ホーム</button>
+  <div class="dh dh-row"><h1>個人情報を渡している会社</h1><button class="addbtn" id="add">＋ 会社を追加</button></div>
+  <input class="search" id="q" type="search" placeholder="会社名・分野で探す" value="${esc(S.q||"")}" aria-label="会社名・分野で探す">
+  <div class="filters">${FILTERS.map(([l,fn])=>`<button aria-pressed="${l===S.filter}" data-f="${l}">${l}<span class="num">${l==="すべて"?total:sum(fn)}</span></button>`).join("")}</div>
+  <div id="lst"></div>`);
+  $("bk").onclick=K0;
+  $("add").onclick=KAdd;
+  document.querySelectorAll(".filters [data-f]").forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;S.sel=null;const y=$("screen").scrollTop;KL2();$("screen").scrollTop=y;});
+  $("q").oninput=e=>{S.q=e.target.value;drawList();};
+  drawList();
+  if(S.just){flash(S.just);S.just=null;}
+}
+function drawList(){
+  const f=(FILTERS.find(x=>x[0]===S.filter)||FILTERS[0])[1], q=(S.q||"").trim();
+  const rank=d=>isLeak(d)?2:isMaybe(d)?1:0;
+  const rows=D.map((d,i)=>[d,i]).filter(([d])=>f(d)&&(!q||d[0].includes(q)||d[1].includes(q)))
+    .sort((a,b)=>(rank(b[0])-rank(a[0]))||(lastYear(b[0])-lastYear(a[0])));
+  const legend=(S.filter==="漏えい")?`<p class="hint legend"><span><span class="dot"></span>漏えい通知：会社からお詫びが届いた</span><span><span class="ring"></span>可能性：企業の公表あり。対象かは未確定</span></p>`:"";
+  // しばらく使っていない会社は、選んで依頼文をまとめて作れる（依頼中の会社は選べない）
+  const idle=S.filter==="しばらく使っていない";
+  if(idle&&!S.sel){S.sel={};rows.forEach(([d,i])=>{if(!S.req[i])S.sel[i]=true;});}
+  const nSel=idle?Object.keys(S.sel).filter(k=>S.sel[k]).length:0;
+  $("lst").innerHTML=`${legend}
+  ${idle?`<p class="hint">最後の記録から${IDLE_Y}年以上たっている会社です。使っていない会社には、情報を消してもらう依頼を出せます。</p>
+  <div class="cta" style="margin-top:16px"><button class="primary" id="batch" ${nSel?"":"disabled"}>消してもらう依頼文をまとめて作る（${nSel}社）</button>
+  <p class="sub-cta">1社ずつ文面をお見せします。送るのはお客さまご自身です。</p></div>`:""}
+  <div class="list">${rows.map(([d,i])=>idle?
+    `<div class="row selrow"><label class="sel"><input type="checkbox" data-s="${i}" ${S.sel[i]?"checked":""} ${S.req[i]?"disabled":""}><span class="nm">${esc(d[0])}<span class="meta">最後の記録 ${lastYear(d)}年${isGone(d)?"・退会済み":""}</span></span></label>${status(d,i)}<button class="go" data-i="${i}" aria-label="${esc(d[0])}の詳細">${ICON.chev}</button></div>`
+    :`<button class="row" data-i="${i}"><span class="nm">${esc(d[0])}</span>${status(d,i)}${ICON.chev}</button>`).join("")||`<p class="empty" style="margin-top:32px">見つかりませんでした。</p>`}</div>
+  ${S.filter==="すべて"&&!q?`<p class="note">このほか、人に見られたくない種類のご登録が${HIDDEN}件あります。名前は伏せています。</p>`:""}`;
+  $("lst").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{S.kdFrom="list";KD(+b.dataset.i);});
+  $("lst").querySelectorAll("[data-s]").forEach(c=>c.onchange=()=>{S.sel[c.dataset.s]=c.checked;const y=$("screen").scrollTop;drawList();$("screen").scrollTop=y;});
+  if($("batch")) $("batch").onclick=()=>{const ids=Object.keys(S.sel).filter(k=>S.sel[k]).map(Number);if(ids.length)KBatch(ids,0);};
+}
+
+/* ---------- 消してもらう依頼文を、1社ずつ続けて作る ---------- */
+function KBatch(ids,k){
+  const i=ids[k], d=D[i];
+  render(`
+  <button class="back" id="bk">${ICON.back}一覧</button>
+  <div class="dh"><div class="k">まとめて依頼文を作る・<span class="num">${k+1}</span> / <span class="num">${ids.length}</span>社</div><h1>${esc(d[0])}</h1>
+    <div class="stline"><span>最後の記録 ${lastYear(d)}年</span>${isGone(d)?"<span>退会済み</span>":""}</div></div>
+  <div class="bar" style="margin-top:16px"><i style="width:${(k/ids.length)*100}%"></i></div>
+  <div class="sheet"><textarea id="tx" aria-label="依頼文">${esc(letter(d,"del"))}</textarea></div>
+  <div class="cta">
+    <button class="primary" id="sent">送ったので記録して、次へ</button>
+    <button class="secondary" id="cp">文面をコピー</button>
+    <button class="textbtn" id="skip">この会社は今回は送らない</button>
+    <p class="sub-cta">送り先は、各社のサイトにある個人情報のお問い合わせ窓口です。MyDataGuardが代わりに送ることはありません。</p>
+  </div>`);
+  const next=()=>{if(k+1<ids.length)KBatch(ids,k+1);else{S.sel=null;const c=ids.filter(x=>S.req[x]).length;toast(`${c}社の依頼を記録しました`);KQ();} };
+  $("bk").onclick=()=>{S.sel=null;KL2();};
+  $("cp").onclick=()=>copyText();
+  $("sent").onclick=()=>{S.req[i]={kind:"del",date:TODAY};next();};
+  $("skip").onclick=next;
+}
+function copyText(){const t=$("tx");(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast("コピーしました"),()=>{t.select();toast("文面を選択しました");});}
+
+/* ---------- 引っ越し・姓が変わったとき ----------
+   住所（氏名）を渡している会社は「変更が必要」として並べ、1社ずつ「済み」にできる。
+   本人確認だけの会社（構想）は「変更不要。MyDataGuardで1回直せば届く」とまとめて先に見せる */
+function KMove(back){
+  S.tab="list";
+  const kind=S.mvKind, fld=kind==="住所"?"住所":"氏名";
+  const need=D.map((d,i)=>[d,i]).filter(([d,i])=>!isGone(d)&&fieldsOf(i).find(f=>f.l===fld).st==="yes")
+    .sort((a,b)=>lastYear(b[0])-lastYear(a[0]));
+  const done=need.filter(([d,i])=>S.mv[kind][i]).length;
+  const live=C.filter((c,j)=>!S.stopped[j]);
+  const idDone=S.idMv[kind];
+  render(`
+  <button class="back" id="bk">${ICON.back}${back==="idp"?"お預かりする情報":"ホーム"}</button>
+  <div class="dh"><h1>引っ越し・姓が変わったとき</h1></div>
+  <div class="seg" role="group" aria-label="変わるもの" style="margin-top:16px">
+    <button aria-pressed="${kind==="住所"}" data-k="住所">住所が変わる</button>
+    <button aria-pressed="${kind==="氏名"}" data-k="氏名">姓が変わる</button>
+  </div>
+
+  <section class="mv-ok">
+    <div class="k">本人確認だけの会社（構想）　<span class="num">${live.length}</span>社</div>
+    <p class="big">変更は要りません</p>
+    <p class="hint">MyDataGuardの${fld}を1回直せば届く仕組みを準備しています。これらの会社は、お客さまの${fld}を持っていません。</p>
+    <p class="names">${live.map(c=>esc(c.n)).join("・")}</p>
+    <div class="cta" style="margin-top:16px">${idDone
+      ?`<p class="donemsg">${CHECK}MyDataGuardの${fld}を変更しました（${md(TODAY)}・デモ）</p>`
+      :`<button class="primary" id="idp">MyDataGuardの${fld}を変える</button>`}</div>
+  </section>
+
+  <section class="blk"><h2>変更が必要な会社　<span class="num">${need.length}</span>社中 <span class="num">${done}</span>社 済み</h2>
+    <div class="bar"><i style="width:${need.length?done/need.length*100:0}%"></i></div>
+    <p class="hint">${fld}を渡している会社です。各社のサイトや店頭で手続きをして、済んだら印を付けてください。</p>
+    <div class="list">${need.map(([d,i])=>`<div class="row mvrow"><button class="nm go2" data-i="${i}">${esc(d[0])}<span class="meta">${esc(d[1])}</span></button><button class="mark${S.mv[kind][i]?" on":""}" data-mv="${i}" aria-pressed="${!!S.mv[kind][i]}">${S.mv[kind][i]?`${CHECK}済み`:"済みにする"}</button></div>`).join("")}</div>
+  </section>`);
+  const keep=fn=>{const y=$("screen").scrollTop;fn();$("screen").scrollTop=y;};
+  $("bk").onclick=back==="idp"?KM:K0;
+  document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{S.mvKind=b.dataset.k;KMove(back);});
+  if($("idp")) $("idp").onclick=()=>{S.idMv[kind]=true;toast(`MyDataGuardの${fld}を変更しました（デモ）`);keep(()=>KMove(back));};
+  document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>{const i=b.dataset.mv;S.mv[kind][i]=!S.mv[kind][i];keep(()=>KMove(back));});
+  document.querySelectorAll(".go2[data-i]").forEach(b=>b.onclick=()=>{S.kdFrom="home";KD(+b.dataset.i);});
+}
+
+/* ---------- 会社を手で足す ---------- */
+const ADD_CATS=["スーパー","ドラッグストア","家電量販店","ガソリンスタンド","ジム","美容室","書店","その他"];
+const ADD_ITEMS=[["氏名","氏名"],["住所","住所"],["電話番号","電話"],["生年月日","生年月日"],["身分証の写し","身分証"],["メールアドレス","メール"],["カード","カード"]];
+function KAdd(){
+  const a=S.add||(S.add={cat:"",name:"",items:{"氏名":true,"電話":true} });
+  render(`
+  <button class="back" id="bk">${ICON.back}一覧</button>
+  <div class="dh"><h1>会社を追加</h1></div>
+  <p class="lead">店頭の会員カードや紙の申込みなど、メールに残らない会社を足せます。</p>
+  <section class="blk"><h2>分野</h2>
+    <div class="filters" style="margin-top:8px">${ADD_CATS.map(c=>`<button aria-pressed="${a.cat===c}" data-cat="${c}">${c}</button>`).join("")}</div>
+  </section>
+  <section class="blk"><h2>会社・お店の名前</h2>
+    <input class="search" id="nm" style="margin-top:8px" placeholder="例：駅前のドラッグストア" value="${esc(a.name)}" aria-label="会社・お店の名前">
+  </section>
+  <section class="blk"><h2>渡した項目</h2>
+    <div class="checks">${ADD_ITEMS.map(([l,k])=>`<label class="chk"><input type="checkbox" data-it="${k}" ${a.items[k]?"checked":""}><span>${l}</span></label>`).join("")}</div>
+    <p class="hint">項目の種類だけを記録します。番号などの中身は入力しません。</p>
+  </section>
+  <div class="cta">
+    <button class="primary" id="ok" ${a.name.trim()?"":"disabled"}>この会社を追加する</button>
+    <p class="sub-cta">追加した会社は、この端末の中だけに置きます。デモでは、ページを閉じると消えます。</p>
+  </div>`);
+  const keep=fn=>{const y=$("screen").scrollTop;fn();$("screen").scrollTop=y;};
+  $("bk").onclick=()=>{S.add=null;KL2();};
+  document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{a.cat=b.dataset.cat;keep(KAdd);});
+  $("nm").oninput=e=>{a.name=e.target.value;$("ok").disabled=!a.name.trim();};
+  document.querySelectorAll("[data-it]").forEach(c=>c.onchange=()=>{a.items[c.dataset.it]=c.checked;});
+  $("ok").onclick=()=>{
+    const items=ADD_ITEMS.map(x=>x[1]).filter(k=>a.items[k]).join("・")||"氏名";
+    D.push([a.name.trim(),a.cat||"その他",`${TODAY} ご自身で追加`,items,3,""]);
+    recount();S.add=null;S.filter="すべて";S.q="";S.just=`#lst [data-i="${D.length-1}"]`;
+    toast("会社を追加しました");KL2();
+  };
+}
+
+/* ---------- 本人確認だけの会社（構想） ---------- */
+function KF(){
+  S.tab="list";
+  render(`
+  <button class="back" id="bk">${ICON.back}ホーム</button>
+  <div class="dh"><div class="k">構想・準備中</div><h1>本人確認だけの会社</h1></div>
+  <p class="lead">MyDataGuardで本人確認すると、個人情報を渡さずに登録できる仕組みを準備しています（構想）。この画面はその姿を架空のデータで示したデモです。</p>
+  ${future()}`);
+  $("bk").onclick=K0;
+  document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>KC(+b.dataset.c));
+  document.querySelectorAll("[data-m]").forEach(b=>b.onclick=KM);
+  if(S.just){flash(S.just);S.just=null;}
+}
+function future(){
+  return `
+  <h2 class="sec">会社ごとに伝えている、確認の結果</h2>
+  <div class="list">${C.map((c,j)=>`<button class="row${S.stopped[j]?" off":""}" data-c="${j}"><span class="nm">${esc(c.n)}<span class="meta">${esc(answers(c))}</span><span class="meta">${S.stopped[j]?`${md(S.stopped[j])}に停止`:`最終利用 ${md(c.last)}`}</span></span><span class="st ${S.stopped[j]?"":"on"}">${S.stopped[j]?"停止中":"利用中"}</span>${ICON.chev}</button>`).join("")}</div>
+  <button class="src" data-m="1" style="margin-top:32px">
+    <span><span class="k">確かめているのは</span>
+    <span class="nm">MyDataGuardがお預かりする情報（構想）</span>
+    <span class="meta">${IDP.map(m=>m[0]).join("・")}・${ymd(IDP_DATE)}に本人確認</span></span>
+    ${ICON.chev}
+  </button>`;
+}
+
+/* ---------- これまで：会社ごとの詳細 ---------- */
+function KD(i){
+  const d=D[i];
+  const st=[];
+  const mb=isMaybe(d), nw=NEWS[d[0]];
+  if(isLeak(d)) st.push('<span class="hot"><span class="dot"></span>漏えい通知あり</span>');
+  if(mb) st.push(`<span class="hot"><span class="ring"></span>漏えいの可能性・${SRC}</span>`);
+  st.push(`<span>${SURE[d[4]]}</span>`);
+  if(isIdle(d)&&!S.req[i]) st.push(`<span>しばらく使っていない（最後の記録 ${lastYear(d)}年）</span>`);
+  if(isGone(d)) st.push('<span>退会済み</span>');
+  if(isLaw(d)) st.push('<span>法律で保存</span>');
+  if(S.req[i]) st.push('<span class="on">依頼中</span>');
+  // 重なり：公表された「漏れた可能性があるもの」と、お客さまが渡したと思われるもの
+  const mine=d[3].split("・");
+  const hit=x=>mb&&nw.what.split("・").some(w=>w.includes(x.replace(/（.*）/,""))||x.includes(w));
+  const todo=mb?[
+    ["会社に、自分が対象かどうかを問い合わせる","下のボタンから依頼文の下書きを作れます。"],
+    nw.what.includes("パスワード")?["パスワードを変更する","同じパスワードをほかのサイトでもお使いなら、そちらも変更してください。"]:null,
+    mine.some(x=>x.includes("カード"))?["カード会社に連絡する","身に覚えのない請求がないかを確かめ、番号の変更も相談できます。"]:null,
+    ["名前入りの不審なメールや電話に注意する","この会社に何を渡したかは、この画面でいつでも確かめられます。"]
+  ].filter(Boolean):[];
+  const fromList=S.kdFrom==="list";
+  const manual=d[4]===3;
+  const editing=S.edit&&S.edit.i===i;
+  const fl=fieldsOf(i), nMine=fl.filter(f=>f.mine).length;
+  const tag=manual?"会員情報（ご自身で記入）":nMine===fl.length?"会員情報（ご自身で確認）":nMine?"会員情報（一部ご自身で確認）":"会員情報（推定）";
+  const foot=editing?"":isLeak(d)?(nMine?"ご自身で確認した内容のうち、「渡した」項目が外に出たかもしれません":"この内容が、外に出たかもしれません")
+    :mb?"下線の項目が、公表された内容と重なります":"この会社には、個人情報を渡しています";
+  render(`
+  <button class="back" id="bk">${ICON.back}${fromList?"一覧":"ホーム"}</button>
+  <div class="dh"><div class="k">個人情報を渡している会社・${esc(d[1])}</div><h1>${esc(d[0])}</h1><div class="stline">${st.join("")}</div></div>
+  ${pcard({mode:"past",items:d[3],fields:fl,edit:editing,hit:mb?hit:null,hitL:mb?(l=>hitLabel(nw,l)):null,warn:(isLeak(d)||mb)&&!editing,who:d[0],tag:tag,
+    cap:editing?"渡した項目を、ご自身で直してください":"この会社からは、お客さまがこう見えています",foot:foot})}
+  ${editing?`<div class="cta" style="margin-top:16px">
+    <button class="primary" id="save">この内容で保存する</button>
+    <button class="textbtn" id="cancel">やめておく</button>
+    <p class="sub-cta">直した内容は、この端末の中だけに置きます。</p>
+  </div>`:`<button class="textbtn fixbtn" id="fix">渡した項目を直す</button>
+  <p class="hint">${manual?"ご自身で追加した会社です。":nMine?"「ご自身で確認」の付いた欄は、お客さまが直した内容です。ほかの欄は推定です。":"業種とメールの件名からの推定です。合っていなければ、上の「渡した項目を直す」で直せます。"}今も持っているかは分かりません。退会後も残っていることがあります。</p>`}
+  ${isLaw(d)?`<p class="hint">この会社は法律により、取引が終わった後も一定の期間、記録を保存する義務があります。期間が過ぎたら消去するよう依頼できます。</p>`:""}
+  <div class="span2"><div><span>いつから</span><b>${N(firstYear(d),"年")}</b></div><div><span>最後の記録</span><b>${N(lastYear(d),"年")}</b></div></div>
+  ${mb?`<section class="blk"><h2>企業の公表</h2>
+    <div class="kv">
+      <div><span>公表日</span><b class="num">${ymd(nw.date)}</b></div>
+      <div><span>情報源</span><b>${SRC}</b></div>
+      <div><span>漏れた可能性があるもの</span><b>${esc(nw.what)}</b></div>
+    </div>
+    <p class="hint">${nw.note}お客さまが対象かどうかは、まだ分かりません。会社からのお知らせも届いていません。</p>
+  </section>`:""}
+  ${isLeak(d)?`<section class="blk"><h2>漏えいの知らせ</h2>
+    <div class="kv">
+      <div><span>届いた日</span><b class="num">${ymd(leakDate(d))}</b></div>
+      <div><span>情報源</span><b>会社からのお詫びのメール</b></div>
+    </div>
+  </section>`:""}
+  ${mb?`<section class="blk"><h2>いまできること</h2>
+    <ol class="todo">${todo.map(t=>`<li><span>${t[0]}<small>${t[1]}</small></span></li>`).join("")}</ol>
+  </section>`:""}
+  <section class="blk"><h2>記録</h2>
+    <ul class="tl">${(mb?[`?${nw.date} 企業の公表：漏えいの可能性（お客さまが対象かは未確定）`]:[]).concat(d[2].split("|").reverse()).map(t=>{const cls=t[0]==="!"?"hot":t[0]==="?"?"maybe":"";t=t.replace(/^[!?]/,"");const m=t.match(/^([\d\-〜]+|毎週)\s*(.*)$/);return `<li class="${cls}"><span class="dt">${m?m[1]:""}</span><span class="tx">${esc(m?m[2]:t)}</span></li>`;}).join("")}</ul>
+    <p class="hint">${manual?"ご自身で追加した記録です。":mb?"企業の公表と、お客さまのメールの件名から作った記録です。":"お客さまのメールの件名から作った記録です。"}</p>
+  </section>
+  ${editing?"":`<div class="cta">
+    ${mb?`<button class="primary" id="chk">対象かどうか会社に問い合わせる</button>
+    <button class="secondary" id="del">止める・消してもらう</button>`
+    :`<button class="primary" id="del">${isLaw(d)?"期間が過ぎたら消してもらう":"止める・消してもらう"}</button>
+    <button class="secondary" id="ask">何を持っているか聞く</button>`}
+    <p class="sub-cta">依頼文の下書きをお作りします。送るのはお客さまご自身です。</p>
+  </div>`}`);
+  $("bk").onclick=()=>{S.edit=null;(fromList?KL2:K0)();};
+  if(!editing){$("del").onclick=()=>KR(i,isLaw(d)?"later":"del");
+    if(mb) $("chk").onclick=()=>KR(i,"check"); else $("ask").onclick=()=>KR(i,"ask");}
+  // 直す
+  const keep=fn=>{const y=$("screen").scrollTop;fn();$("screen").scrollTop=y;};
+  if(editing){
+    document.querySelectorAll("[data-fl]").forEach(b=>b.onclick=()=>{S.edit.tmp[b.dataset.fl]=b.dataset.v;keep(()=>KD(i));});
+    $("save").onclick=()=>{S.fix[i]=Object.assign({},S.fix[i]||{},S.edit.tmp);S.edit=null;toast("ご自身で確認した内容にしました");keep(()=>KD(i));};
+    $("cancel").onclick=()=>{S.edit=null;keep(()=>KD(i));};
+  } else $("fix").onclick=()=>{S.edit={i:i,tmp:{} };keep(()=>KD(i));};
+}
+
+function letter(d,kind){
+  let s=`${d[0]}\n個人情報のお問い合わせ窓口　ご担当者様\n\n私は貴社の${d[1]}のサービスを利用している（または利用していた）者です。\n登録メールアドレス：（ご自身のメールアドレス）\n\n個人情報保護法第33条に基づき、貴社が保有する私の保有個人データの項目、取得日、利用目的、第三者への提供の有無を開示してください。\n`;
+  if(kind==="check") s+=`\nあわせて、貴社が${ymd(NEWS[d[0]].date)}に公表された個人情報の漏えいについて、私の個人データが対象に含まれるかどうか、含まれる場合はその項目をお知らせください。\n`;
+  if(kind==="del") s+= isLeak(d)?`\nあわせて、貴社で個人データの漏えいが発生したことを受け、同法第35条に基づき、私の保有個人データの利用の停止と消去をお願いします。\n`:`\nあわせて、貴社が私の保有個人データを利用する必要がなくなっている場合は、同法第35条に基づき、利用の停止と消去をお願いします。\n`;
+  if(kind==="del"||kind==="later") s+=`法令により保存が必要な記録は、その項目と保存期間を教えてください。保存期間が過ぎたら消去してください。\n`;
+  return s+`\n結果は、このメールへの返信でお知らせください。\n\n（氏名）`;
+}
+function KR(i,kind){
+  const d=D[i];
+  render(`
+  <button class="back" id="bk">${ICON.back}${esc(d[0])}</button>
+  <div class="dh"><div class="k">依頼文の下書き</div><h1>${REQ_TITLE[kind]||"止める・消してもらう"}</h1></div>
+  <div class="sheet"><textarea id="tx" aria-label="依頼文">${esc(letter(d,kind))}</textarea></div>
+  <div class="cta">
+    <button class="primary" id="sent">送ったので記録する</button>
+    <button class="secondary" id="cp">文面をコピー</button>
+    <p class="sub-cta">送り先は、各社のサイトにある個人情報のお問い合わせ窓口です。<br>MyDataGuardが代わりに送ることはありません。</p>
+  </div>`);
+  $("bk").onclick=()=>KD(i);
+  $("cp").onclick=()=>copyText();
+  // 記録したら一覧へ戻し、該当の行（「依頼中」に変わる）を光らせる
+  $("sent").onclick=()=>{S.req[i]={kind:kind,date:TODAY};S.filter="すべて";S.q="";S.just=`#lst [data-i="${i}"]`;toast("記録しました。返事をお待ちください");KL2();};
+}
+
+/* ---------- 構想：MyDataGuardがお預かりする情報 ---------- */
+function KM(){
+  render(`
+  <button class="back" id="bk">${ICON.back}本人確認だけの会社</button>
+  <div class="dh"><div class="k">構想・準備中</div><h1>MyDataGuardがお預かりする情報</h1></div>
+  ${pcard({mode:"idp",who:"MyDataGuard",tag:`${ymd(IDP_DATE)}に本人確認`,cap:"MyDataGuardからは、お客さまがこう見えます（構想）"})}
+  <p class="hint">MyDataGuardで本人確認したときの情報です（構想・架空のデータ）。住所は${ymd("2026-08-20")}に変更されました。</p>
+  ${C[0]?pcard({mode:"future",who:C[0].n,tag:"会員情報",checks:C[0].checks,
+    cap:`ほかの会社には、確認の結果だけを伝えます（例：${esc(C[0].n)}）`,
+    foot:"同じ枠でも、ほかの会社からは氏名も住所も見えません。"}):""}
+  <section class="blk"><h2>お引っ越しのとき</h2>
+    <p class="hint">MyDataGuardで住所を1回変更すれば済む仕組みを準備しています。本人確認だけの会社は住所を持っていないため、各社でのお手続きは要りません。${S.idMv["住所"]?`（住所は${md(TODAY)}に変更済み・デモ）`:""}</p>
+    <button class="textbtn fixbtn" id="mv">引っ越し・姓が変わったときの手続きを見る</button>
+  </section>
+  <div class="cta">
+    <button class="secondary" id="go">本人確認だけの会社（${active()}社）を見る</button>
+  </div>`);
+  $("bk").onclick=KF;$("go").onclick=()=>{KF();flash(".sec");};
+  $("mv").onclick=()=>{S.mvKind="住所";KMove("idp");};
+}
+
+/* ---------- 本人確認だけの会社（構想）：会社ごとの詳細 ---------- */
+function KC(j,confirm){
+  const c=C[j], off=S.stopped[j];
+  render(`
+  <button class="back" id="bk">${ICON.back}本人確認だけの会社</button>
+  <div class="dh"><div class="k">本人確認だけの会社（構想）・${esc(c.c)}</div><h1>${esc(c.n)}</h1>
+    <div class="stline">${off?`<span>${md(off)}に停止</span>`:`<span class="on">利用中</span>`}<span>MyDataGuardの記録で確定</span></div></div>
+  ${pcard({mode:"future",who:c.n,tag:"会員情報",checks:c.checks,
+    cap:"この会社からは、お客さまがこう見えています",
+    foot:"この会社には、本人確認の結果だけを伝えています。氏名も住所も渡していません。"})}
+  ${c.how.map(h=>`<p class="hint">${h}</p>`).join("")}
+  <p class="hint">確認の記録をこの会社が持つのは、${c.until}です。</p>
+  <div class="span2"><div><span>いつから</span><b class="num">${ymd(c.since)}</b></div><div><span>最終利用日</span><b class="num">${ymd(c.last)}</b></div></div>
+  <section class="blk"><h2>MyDataGuardの記録</h2>
+    <ul class="tl">${(off?[`${off} 利用を停止`]:[]).concat(c.log).map(t=>{const m=t.match(/^(\d{4}-\d{2}-\d{2})\s*(.*)$/);return `<li><span class="dt">${m[1]}</span><span class="tx">${esc(m[2])}</span></li>`;}).join("")}</ul>
+  </section>
+  <div class="cta" id="cta">${off?`
+    <button class="secondary" id="re">利用を再開する</button>
+    <p class="sub-cta">停止中は、MyDataGuardはこの会社に確認の結果を伝えません。</p>`
+  :confirm?`
+    <p class="confirm">MyDataGuardは、${esc(c.n)}に確認の結果を伝えなくなります。お取引中のご連絡（発送・返品・予約の変更）は、そのお取引が終わるまで届きます。</p>
+    <button class="primary" id="ok">利用を止める</button>
+    <button class="textbtn" id="no">やめておく</button>`
+  :`
+    <button class="primary" id="stop">この会社での利用を止める</button>
+    <p class="sub-cta">止めた後も、いつでも再開できます。</p>`}
+  </div>`);
+  $("bk").onclick=KF;
+  if(confirm) $("screen").scrollTop=$("screen").scrollHeight;
+  if(off) $("re").onclick=()=>{delete S.stopped[j];S.just=`[data-c="${j}"]`;toast(`${c.n}での利用を再開しました`);KF();};
+  else if(confirm){
+    $("ok").onclick=()=>{S.stopped[j]=TODAY;S.just=`[data-c="${j}"]`;toast(`${c.n}での利用を止めました。ホームの件数も減りました`);KF();};
+    $("no").onclick=()=>KC(j);
+  } else $("stop").onclick=()=>KC(j,true);
+}
+
+/* ---------- 依頼 ---------- */
+function KQ(){
+  S.tab="req";
+  const ks=Object.keys(S.req);
+  render(`
+  ${head()}
+  <div class="dh" style="margin-top:24px"><div class="k">依頼</div><h1>返事を待っている依頼</h1></div>
+  ${ks.length?`<div class="list" style="margin-top:16px">${ks.map(i=>`<button class="row" data-i="${i}"><span class="nm">${esc(D[i][0])}<span class="meta">${REQ_KIND[S.req[i].kind]||"止める・消してもらう依頼"}・${md(S.req[i].date)}送信</span></span><span class="st">返事待ち</span>${ICON.chev}</button>`).join("")}</div>
+  <p class="note">返事のメールが届いたら、ここに記録します。</p>`
+  :`<p class="empty">まだ依頼はありません。<br>ホームの「個人情報を渡している会社」から会社を選ぶと、依頼文を作れます。</p>`}`);
+  document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>KD(+b.dataset.i));
+}
+
+/* ---------- 方針：1はアルファ版の作り（事実）。2〜5は検討中の方針 ---------- */
+function K7(){
+  S.tab="promise";
+  render(`
+  ${head()}
+  <div class="dh" style="margin-top:24px"><div class="k">MyDataGuardの方針</div><h1>お客さまの情報の扱い</h1></div>
+  <ol class="pl">
+    <li><span><b>会社の一覧は、この端末の中だけに置きます</b><p>メールは件名・差出人・日付だけを、この端末の中で読みます。ご自身で直した内容・追加した会社も、運営者のサーバーには送りません。企業・当局の公表との照らし合わせも、この端末の中で行います。</p></span></li>
+    <li><span><b>本人確認だけの会社には、確認の結果だけを伝える（構想）</b><p>氏名や住所は渡さず、「本人確認済み」「20歳以上」といった結果だけを伝える仕組みを準備しています。会社ごとに、いつでも止められるようにする方針です。</p></span></li>
+    <li><span><b>どこで使ったかの記録は、決めた用途にしか使わない（検討中）</b><p>お客さまへの表示、ご連絡の中継、利用料の精算、法令に基づく開示のためだけに使う方針です。営業・広告・審査には使わないことを検討しています。</p></span></li>
+    <li><span><b>情報を売らない（検討中）</b><p>確認の結果は、お客さまが伝えると決めた1件ごとにしか出さない方針です。</p></span></li>
+    <li><span><b>開示は、法令に基づく請求のときだけ（検討中）</b><p>法令でお知らせしてはならないとされる場合などを除き、お客さまにお知らせし、開示の件数を毎年公表することを検討しています。</p></span></li>
+  </ol>
+  <section class="blk"><h2>設定</h2>
+    <div class="box" style="margin-top:8px">
+      <div class="acct"><div><b style="margin-top:0">お使いのメール</b><span class="num">${S.linked?"読み取り中（デモ）":"止めています"}</span></div></div>
+      ${watchOpt()}
+    </div>
+  </section>
+  <div class="cta">
+    <button class="secondary" id="unlink">${S.linked?"メールの読み取りを止める":"メールの読み取りを始める"}</button>
+    <p class="sub-cta">01はアルファ版の作りです。02〜05は方針として検討中のもので、提供開始までに内容を確定します。</p>
+  </div>`);
+  $("unlink").onclick=()=>{S=S0();KS();};
+  bindWatch(K7);
+}
+$("restart").onclick=()=>{S=S0();first=true;KS();};
+KS();
+</script>
+</body>
+</html>
