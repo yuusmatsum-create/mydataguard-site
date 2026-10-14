@@ -159,7 +159,7 @@ img,svg{max-width:100%}
 .last .prose{margin-top:24px}
 .last .cta{margin-top:40px}
 
-/* ---------- 事業者向け：台帳の見比べ ---------- */
+/* ---------- 事業者向け：会員一覧の見比べ ---------- */
 .compare{margin-top:48px;display:grid;grid-template-columns:7fr 4fr;gap:32px;align-items:start}
 .ledger figcaption{font-size:var(--t3);font-weight:600;color:var(--ink);margin-bottom:8px}
 .sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
@@ -316,7 +316,7 @@ img,svg{max-width:100%}
 @media (max-width:960px){.split{grid-template-columns:1fr;gap:48px}.app{max-width:380px}}
 
 /* 約束 */
-.vows{margin-top:56px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.vows{margin-top:56px;display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
 .vows li{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:32px}
 .vows .n{font-family:var(--num);font-size:var(--t4);color:var(--sub);letter-spacing:.12em}
 .vows h3{margin-top:8px;font-size:var(--t3);font-weight:600;color:var(--ink);line-height:1.7}
