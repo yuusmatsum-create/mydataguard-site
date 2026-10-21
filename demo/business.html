@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 通信しない作り：外部の読み込み・送信はブラウザがすべて遮断する -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<title>MyDataGuard 事業者向けデモ（架空のデータ）</title>
+<style>
+/* 事業者向けデモ：左に店が使う「MyDataGuard 事業者コンソール」、右にお客さまのスマホ。
+   一番上の濃い灰色の帯は「デモ操作」で、製品の画面ではない。
+   1280×800 で録画する前提。幅 760px 以下では店とお客さまをタブで切り替える。
+   見た目はよくある B2B SaaS の管理画面にそろえる：白と淡い灰の地、1px の線、青のアクセント1色。
+   成功は緑、注意は琥珀。赤は使わない。角丸は 8px（小物 6px）、影はごく弱く。
+   文字：28（件数の数字）/ 20（見出し）/ 16 / 14（本文）/ 13（表）/ 12（補足）。太さは 400/500/600。 */
+:root{
+  --bg:#F7F8FA; --panel:#FFFFFF; --side:#FAFAFB; --line:#E5E7EB; --line2:#D1D5DB; --hover:#F3F4F6; --head:#F9FAFB;
+  --text:#111827; --text2:#374151; --sub:#6B7280; --faint:#9CA3AF;
+  --blue:#2563EB; --blue-h:#1D4ED8; --blue-bg:#EFF6FF; --blue-line:#DBEAFE; --blue-ink:#1E40AF;
+  --ok:#047857; --ok-bg:#ECFDF5; --ok-dot:#10B981;
+  --warn:#B45309; --warn-bg:#FFFBEB; --warn-line:#FDE68A;
+  --demo:#1F2937; --demo2:#374151; --demo-t:#D1D5DB;
+  /* 英数字は端末の UI 書体（Mac は SF、Windows は Segoe UI）、和文はゴシック。業務 SaaS で一般的な組み合わせ */
+  --jp:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Noto Sans JP","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
+  --r:8px; --rs:6px;
+  --sh:0 1px 2px rgba(16,24,40,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#E5E7EB;font-family:var(--jp);color:var(--text);font-size:14px;font-weight:400;line-height:1.55;letter-spacing:0;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;min-height:100vh;display:flex;align-items:center;justify-content:center;word-break:auto-phrase}
+h1,h2,h3,p,ol,ul,dl,dd{margin:0}
+ol,ul{padding:0;list-style:none}
+p{text-wrap:pretty}
+b,strong{font-weight:600}
+button{font:inherit;letter-spacing:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+button:disabled{cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.ic{width:18px;height:18px;flex:none}
+
+@media (prefers-reduced-motion:no-preference){
+  .fade{animation:fade .2s ease-out}
+  .slide{animation:slide .24s ease-out}
+}
+@keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none} }
+@keyframes slide{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1} }
+html.test *{animation:none!important;transition:none!important}
+
+/* 全体 */
+.app{width:1280px;height:800px;background:var(--bg);display:grid;grid-template-rows:40px minmax(0,1fr);overflow:hidden}
+
+/* ===== デモ操作（製品の外） ===== */
+.demo{background:var(--demo);color:var(--demo-t);display:flex;align-items:center;gap:16px;padding:0 16px;font-size:13px;white-space:nowrap}
+.demo-l{flex:none;font-size:12px;font-weight:600;color:#fff;background:var(--demo2);border-radius:4px;padding:2px 8px;line-height:18px}
+.steps{display:flex;align-items:center;gap:4px;flex:none}
+.steps li{display:flex;align-items:center;gap:6px;padding:2px 8px 2px 4px;border-radius:999px;font-size:12px;color:#9CA3AF;line-height:20px}
+.steps .n{width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;line-height:1;border:1px solid #4B5563}
+.steps li.past{color:var(--demo-t)}
+.steps li.past .n{border-color:#6B7280}
+.steps li.on{background:#fff;color:var(--text);font-weight:600}
+.steps li.on .n{background:var(--blue);border-color:var(--blue);color:#fff}
+.scene{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;text-wrap:nowrap;white-space:nowrap;color:#F9FAFB;padding-left:16px;border-left:1px solid #4B5563}
+.demo-r{display:flex;align-items:center;gap:12px;flex:none}
+.demo-note{font-size:12px;color:#9CA3AF}
+.demo-btn{font-size:12px;color:#fff;border:1px solid #4B5563;border-radius:6px;padding:3px 10px;line-height:18px}
+.demo-btn:hover{background:var(--demo2)}
+.mtabs{display:none}
+.main{display:grid;grid-template-columns:1fr 324px;min-height:0}
+
+/* ===== 左：事業者コンソール ===== */
+.console{display:grid;grid-template-columns:208px 1fr;min-height:0;background:var(--panel);border-right:1px solid var(--line);position:relative;overflow:hidden}
+.sb{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:0 12px 10px;min-height:0;position:relative}
+.sb-brand{height:52px;display:flex;align-items:center;gap:8px;padding:0 6px}
+.sb-brand svg{width:24px;height:24px;flex:none}
+.sb-brand b{font-size:15px;font-weight:600;color:var(--text);line-height:1.2;display:block}
+.sb-brand small{display:block;font-size:12px;color:var(--sub);line-height:1.3}
+.sb-shop{width:100%;display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:7px 8px;box-shadow:var(--sh)}
+.sb-shop:hover{border-color:var(--line2)}
+.av{flex:none;display:inline-grid;place-items:center;font-weight:600;color:var(--blue-ink);background:var(--blue-bg)}
+.sb-shop .av{width:28px;height:28px;border-radius:6px;font-size:13px}
+.sb-shop span.t{flex:1;min-width:0;line-height:1.3}
+.sb-shop span.t b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-shop span.t small{display:block;font-size:12px;color:var(--sub)}
+.sb-shop .ic{width:16px;height:16px;color:var(--faint)}
+.menu{position:absolute;left:12px;right:12px;top:110px;z-index:5;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 10px 24px -6px rgba(16,24,40,.16);padding:4px}
+.menu .mh{font-size:12px;color:var(--sub);padding:6px 8px 4px}
+.menu button{width:100%;display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rs);font-size:13px}
+.menu button:hover{background:var(--hover)}
+.menu button .av{width:22px;height:22px;border-radius:5px;font-size:12px}
+.menu button .ic{margin-left:auto;width:16px;height:16px;color:var(--blue)}
+.sb-nav{margin-top:12px;display:flex;flex-direction:column;gap:2px}
+.nv{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:var(--rs);font-size:14px;color:var(--text2);white-space:nowrap}
+.nv .ic{color:var(--sub)}
+.nv:hover{background:var(--hover)}
+.nv[aria-current="page"]{background:var(--blue-bg);color:var(--blue-ink);font-weight:500}
+.nv[aria-current="page"] .ic{color:var(--blue)}
+.nv .cnt{margin-left:auto;font-size:12px;color:var(--sub)}
+.sb-idea{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.sb-sec{display:flex;align-items:center;gap:6px;padding:0 10px 4px;font-size:12px;color:var(--sub);white-space:nowrap}
+.soon{display:inline-block;font-size:12px;line-height:18px;padding:0 6px;border-radius:999px;background:var(--hover);color:var(--sub);border:1px solid var(--line);white-space:nowrap}
+.sb-idea button{display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;font-size:13px;color:var(--faint);white-space:nowrap;border-radius:var(--rs)}
+.sb-idea button .ic{width:16px;height:16px}
+.sb-idea p{font-size:12px;color:var(--sub);padding:4px 10px 0;line-height:1.5}
+.sb-user{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 6px 0;border-top:1px solid var(--line)}
+.sb-user .av{width:32px;height:32px;border-radius:50%;font-size:13px}
+.sb-user span.t{flex:1;line-height:1.35;min-width:0}
+.sb-user b{display:block;font-size:13px;font-weight:500}
+.sb-user small{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user .ic{width:16px;height:16px;color:var(--faint)}
+
+.cmain{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+.top{height:52px;flex:none;display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--line)}
+.crumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);white-space:nowrap}
+.crumb .ic{width:14px;height:14px;color:var(--faint)}
+.crumb b{color:var(--text);font-weight:500}
+.search{margin-left:auto;width:220px;height:32px;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--line);border-radius:var(--rs);background:var(--head);font-size:13px;color:var(--faint)}
+.search .ic{width:16px;height:16px}
+.search kbd{margin-left:auto;font:inherit;font-size:12px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:0 5px;line-height:18px;background:var(--panel)}
+.ib{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:var(--rs);color:var(--sub);position:relative}
+.ib:hover{background:var(--hover)}
+.ib .dotn{position:absolute;top:1px;right:-3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--blue);color:#fff;font-size:12px;line-height:16px;font-weight:600;text-align:center;box-shadow:0 0 0 2px var(--panel)}
+.page{flex:1;min-height:0;padding:14px 20px 16px;overflow:hidden;display:flex;flex-direction:column}
+.page>.phead{flex:none}
+/* 処理件数：明細の枠を画面の下端まで伸ばし、件数の行を枠の下に置く（表の下が中途半端に空かないように） */
+#tab-count:not([hidden]){flex:1;min-height:0;display:flex;flex-direction:column}
+.dcard{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.dcard .dbody{flex:1;min-height:0;overflow:hidden}
+.dcard .dt tr:last-child td{border-bottom:1px solid var(--line)}
+.dfoot{flex:none;height:42px;display:flex;align-items:center;padding:0 16px;border-top:1px solid var(--line);font-size:13px;color:var(--sub)}
+.phead{display:flex;align-items:center;gap:10px;height:36px;margin-bottom:12px}
+.phead h1{font-size:20px;font-weight:600;line-height:1.3;white-space:nowrap}
+.phead .pill{font-size:12px;color:var(--sub);background:var(--hover);border-radius:999px;padding:0 8px;line-height:20px}
+.phead .act{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 14px;border-radius:var(--rs);font-size:14px;font-weight:500;white-space:nowrap}
+.btn .ic{width:16px;height:16px}
+.btn.pri{background:var(--blue);color:#fff;box-shadow:var(--sh)}
+.btn.pri:hover{background:var(--blue-h)}
+.btn.pri:disabled{background:#BFCFF5;color:#fff;box-shadow:none}
+.btn.sec{background:var(--panel);border:1px solid var(--line2);color:var(--text2);box-shadow:var(--sh)}
+.btn.sec:hover{background:var(--head)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:var(--rs);overflow:hidden;background:var(--panel)}
+.seg button{font-size:13px;padding:0 12px;height:32px;color:var(--text2);white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed="true"]{background:var(--hover);color:var(--text);font-weight:500}
+
+/* バッジ */
+.badge{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;line-height:1}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.ok i{background:var(--ok-dot)}
+.badge.gray{background:var(--hover);color:var(--text2)}
+.badge.gray i{background:var(--faint)}
+.badge.blue{background:var(--blue-bg);color:var(--blue-ink)}
+.badge.sm{height:18px;padding:0 6px}
+.tagc{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:4px;font-size:12px;line-height:1;white-space:nowrap;color:var(--text2);background:var(--head);box-shadow:inset 0 0 0 1px var(--line)}
+/* 表と宛先リストの中の状態は、塗りの札にせず「点＋文字」にする（札が1行に3つ並ぶのを避ける） */
+.tbl .badge,.picks .badge,.field .badge{background:none;padding:0;height:auto;gap:6px;line-height:1.4}
+.tbl .badge.blue{background:var(--blue-bg);padding:0 6px;height:18px;font-size:12px}
+
+/* 会員一覧 */
+.infobar{display:flex;align-items:flex-start;gap:8px;background:var(--blue-bg);border:1px solid var(--blue-line);border-radius:var(--r);padding:9px 12px;font-size:13px;line-height:1.5;color:var(--blue-ink)}
+.infobar .ic{width:16px;height:16px;color:var(--blue);margin-top:2px}
+.infobar b{font-weight:600}
+.fbar{display:flex;align-items:center;gap:8px;margin:10px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--text2);background:var(--panel);white-space:nowrap}
+.chip .c{font-size:12px;color:var(--sub)}
+.chip[aria-pressed="true"]{background:var(--blue-bg);border-color:var(--blue-line);color:var(--blue-ink);font-weight:500}
+.chip[aria-pressed="true"] .c{color:var(--blue-ink)}
+.range{margin-left:auto;font-size:13px;color:var(--sub);white-space:nowrap}
+.tw{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);box-shadow:var(--sh);overflow:hidden}
+.tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+.tbl th{height:34px;background:var(--head);font-size:12px;font-weight:500;color:var(--sub);text-align:left;padding:0 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{height:46px;padding:0 8px;font-size:13px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--text2)}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:#FBFCFD}
+.tbl .r{text-align:right;padding-right:16px}
+.tbl .cb{padding:0 0 0 14px}
+.box{display:block;width:14px;height:14px;border:1px solid var(--line2);border-radius:4px;background:var(--panel)}
+.idc{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.id{font-weight:500;color:var(--text);white-space:nowrap;letter-spacing:.01em}
+.bdg{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:4px}
+.bk{display:flex;flex-direction:column;line-height:1.35;min-width:0}
+.bk span{color:var(--text)}
+.bk small{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbl td.more{padding:0 6px 0 0;text-align:right}
+.tbl td.more .ib{width:26px;height:26px}
+.tbl tr.just td{background:#F5F9FF!important}
+.tbl tr.just td:first-child{box-shadow:inset 3px 0 0 var(--blue)}
+.pager{height:42px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-top:1px solid var(--line);font-size:13px;color:var(--sub)}
+.pages{display:flex;align-items:center;gap:2px}
+.pages button,.pages span{min-width:28px;height:28px;display:inline-grid;place-items:center;border-radius:var(--rs);font-size:13px;color:var(--text2)}
+.pages button[aria-current="page"]{background:var(--blue-bg);color:var(--blue-ink);font-weight:600}
+.pages .ic{width:16px;height:16px}
+
+/* コンソールのお知らせ（右上のトースト・閉じるまで残る） */
+.ctoast{position:absolute;bottom:20px;right:20px;z-index:4;width:480px;display:flex;align-items:flex-start;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 28px -8px rgba(16,24,40,.18),0 2px 4px rgba(16,24,40,.04);padding:12px 12px 12px 14px}
+.ctoast .ti{width:20px;height:20px;flex:none;margin-top:1px}
+.ctoast .ti.ok{color:var(--ok-dot)} .ctoast .ti.info{color:var(--blue)} .ctoast .ti.warn{color:#D97706}
+.ctoast div{flex:1;min-width:0;line-height:1.5}
+.ctoast b{display:block;font-size:14px;font-weight:600;color:var(--text)}
+.ctoast span{display:block;font-size:13px;color:var(--sub);margin-top:2px}
+.ctoast .ib{width:24px;height:24px;margin:-2px -2px 0 0}
+.ctoast .ib .ic{width:16px;height:16px}
+
+/* 連絡 */
+.sendgrid{display:grid;grid-template-columns:1fr 272px;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+.ch{display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 16px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600;white-space:nowrap}
+.ch small{font-size:12px;font-weight:400;color:var(--sub)}
+.frow{display:grid;grid-template-columns:44px 1fr;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.frow label{font-size:13px;color:var(--sub)}
+.frow.tall{align-items:start}
+.frow.tall label{padding-top:8px}
+.field{min-height:36px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--line2);border-radius:var(--rs);padding:4px 10px;font-size:14px;color:var(--text)}
+.field.area{display:block;min-height:112px;padding:8px 10px;line-height:1.7}
+.tok{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border-radius:var(--rs);background:var(--hover);font-size:13px;font-weight:500;white-space:nowrap}
+.field .hint{font-size:12px;color:var(--sub);margin-left:auto;white-space:nowrap}
+.cfoot{display:flex;align-items:center;gap:16px;padding:12px 16px}
+.reason{flex:1;font-size:13px;line-height:1.55;color:var(--sub)}
+.reason.ng{display:flex;gap:8px;color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:var(--rs);padding:8px 10px}
+.reason.ng .ic{width:16px;height:16px;margin-top:2px;color:#D97706}
+.picks{max-height:600px;overflow:hidden}
+.picks button{width:100%;display:grid;grid-template-columns:16px 1fr auto;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--line);text-align:left}
+.picks button:last-child{border-bottom:0}
+.picks button:hover{background:#FBFCFD}
+.picks .rd{width:16px;height:16px;border-radius:50%;border:1px solid var(--line2);background:var(--panel)}
+.picks button[aria-checked="true"]{background:var(--blue-bg)}
+.picks button[aria-checked="true"] .rd{border:5px solid var(--blue)}
+.picks .pi{display:flex;flex-direction:column;line-height:1.35;min-width:0}
+.picks .pi b{font-size:13px;font-weight:500;white-space:nowrap}
+.picks .pi small{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 処理件数 */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.kpi{padding:16px 18px}
+.kpi .kl{font-size:13px;font-weight:500;color:var(--text2);white-space:nowrap}
+.kpi .ks{font-size:12px;color:var(--sub);white-space:nowrap}
+.kpi .kv{display:flex;align-items:baseline;gap:4px;margin-top:10px}
+.kpi .kv b{font-size:28px;font-weight:600;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums lining-nums}
+.kpi .kv span{font-size:13px;color:var(--sub)}
+.kpi .kd{margin-top:6px;font-size:12px;color:var(--sub)}
+.kpi .kd.up{color:var(--ok)}
+.note{display:flex;align-items:center;gap:6px;margin:12px 0 16px;font-size:12px;color:var(--sub)}
+.note .ic{width:14px;height:14px}
+.dt{width:100%;border-collapse:collapse;table-layout:fixed}
+.dt th{height:34px;background:var(--head);font-size:12px;font-weight:500;color:var(--sub);text-align:left;padding:0 16px;border-bottom:1px solid var(--line)}
+.dt td{height:42px;padding:0 16px;font-size:13px;border-bottom:1px solid var(--line);color:var(--text2)}
+.dt tr:last-child td{border-bottom:0}
+.dt td.empty{text-align:center;color:var(--sub);height:96px}
+
+/* ===== 右：お客さまのスマホ ===== */
+.phonewrap{background:#EDEEF1;display:flex;flex-direction:column;align-items:center;gap:12px;padding:18px 12px 0;min-height:0}
+.phone{width:300px;height:612px;flex:none;border-radius:46px;background:#0E0F12;padding:7px;box-shadow:0 0 0 1px #2B2D33,0 24px 44px -24px rgba(17,24,39,.45)}
+.screen{width:100%;height:100%;border-radius:39px;background:#fff;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.sbar{height:42px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 22px 0 28px;font-size:14px;font-weight:600;color:#000;position:relative}
+.island{position:absolute;left:50%;top:9px;width:84px;height:24px;margin-left:-42px;border-radius:12px;background:#000}
+.sic{display:flex;align-items:center;gap:5px}
+.sic svg{display:block}
+.hbar{position:absolute;left:50%;bottom:7px;width:108px;height:4px;margin-left:-54px;border-radius:2px;background:#111;z-index:9}
+.pv{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none}
+.pv::-webkit-scrollbar{display:none}
+/* 店の予約ページ（スマホのブラウザ） */
+.addr{margin:0 12px 6px;height:30px;border-radius:10px;background:#F1F2F4;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;color:#3C3C43}
+.addr .ic{width:12px;height:12px}
+.shd{height:44px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid #F0F0F2}
+.shd .lg{width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;font-size:13px;font-weight:600;color:#fff}
+.shd b{font-size:14px;font-weight:600;flex:1}
+.shd .ic{color:var(--text2)}
+.hero{height:104px;position:relative;display:flex;align-items:flex-end;padding:10px 16px}
+.hero.hidamari{background:linear-gradient(135deg,#F3D9BF 0%,#E9B88F 55%,#D9966A 100%)}
+.hero.aoba{background:linear-gradient(135deg,#D5EBE1 0%,#A9D4C2 55%,#7FB9A3 100%)}
+.hero span{font-size:12px;font-weight:500;background:rgba(255,255,255,.9);color:var(--text);border-radius:999px;padding:2px 10px}
+.pc{padding:14px 16px 24px}
+.ptitle{font-size:17px;font-weight:600;line-height:1.4}
+.pmeta{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.pmeta li{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2)}
+.pmeta .ic{width:15px;height:15px;color:var(--sub)}
+.pmeta .seat{margin-left:4px;font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:0 6px;line-height:18px}
+.perk{margin-top:12px;display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--text2)}
+.perk b{font-size:12px;font-weight:600;color:var(--blue-ink);background:var(--blue-bg);border-radius:4px;padding:0 6px;line-height:18px;white-space:nowrap}
+.mdgbtn{margin-top:14px;width:100%;height:46px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:10px;background:var(--blue);color:#fff;font-size:15px;font-weight:600}
+.mdgbtn:hover{background:var(--blue-h)}
+.mdgbtn svg{width:20px;height:20px}
+.mdgsub{margin-top:6px;text-align:center;font-size:12px;color:var(--sub)}
+.alt{display:block;margin:10px auto 0;font-size:13px;color:var(--blue)}
+.done{margin-top:14px;border:1px solid #A7F3D0;background:var(--ok-bg);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;color:var(--text2)}
+.done .dh{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text)}
+.done .dh .ic{width:20px;height:20px;color:var(--ok-dot)}
+.done.info{border-color:var(--blue-line);background:var(--blue-bg)}
+.done.info .dh .ic{color:var(--blue)}
+.done p{margin-top:4px}
+.done .id{font-weight:600}
+.lnk{color:var(--blue);font-weight:500}
+/* 承認（下から出る同意シート） */
+.scrim{position:absolute;inset:0;background:rgba(17,24,39,.42);z-index:6}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:7;background:#fff;border-radius:18px 18px 0 0;padding:8px 16px 24px;box-shadow:0 -8px 24px rgba(0,0,0,.12)}
+.grab{width:36px;height:4px;border-radius:2px;background:#D1D5DB;margin:0 auto 10px}
+.shh{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.shh svg{width:20px;height:20px}
+.shh .x{margin-left:auto;color:var(--sub)}
+.sht{margin-top:10px;font-size:15px;font-weight:600;line-height:1.45}
+.sht small{display:block;font-size:12px;font-weight:400;color:var(--sub);margin-top:2px}
+.acct{margin-top:10px;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.acct .av{width:30px;height:30px;border-radius:50%;font-size:13px}
+.acct span.t{line-height:1.35;min-width:0}
+.acct b{display:block;font-size:13px;font-weight:600}
+.acct small{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shl{margin-top:12px;font-size:12px;font-weight:500;color:var(--sub)}
+.perm li{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #F0F0F2}
+.perm li:last-child{border-bottom:0}
+.cbx{width:18px;height:18px;flex:none;border-radius:5px;background:var(--blue);color:#fff;display:inline-grid;place-items:center;margin-top:1px}
+.cbx svg{width:14px;height:14px}
+.cbx.off{background:#fff;border:1.5px solid var(--line2)}
+.cbx.off svg{display:none}
+.perm .pt{flex:1;line-height:1.4;min-width:0}
+.perm .pt b{display:block;font-size:14px;font-weight:500}
+.perm .pt small{display:block;font-size:12px;color:var(--sub)}
+.perm .pt .num{font-weight:500;color:var(--text)}
+.perm button{display:flex;align-items:flex-start;gap:10px;width:100%;text-align:left}
+.noperm{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+/* 打ち消し線は文字の装飾ではなく線として引く（漢字の上では装飾の線が字画に紛れて見えないため）。4語とも同じ位置・同じ太さ */
+.noperm s{position:relative;font-size:13px;color:var(--sub);background:#F6F7F9;border:1px solid var(--line);border-radius:6px;padding:2px 10px;line-height:20px;text-decoration:none}
+.noperm s::after{content:"";position:absolute;left:7px;right:7px;top:50%;height:1.5px;margin-top:-1px;background:var(--text2);opacity:.75}
+.mail{margin-top:8px;font-size:12px;color:var(--sub)}
+.shb{display:flex;gap:8px;margin-top:14px}
+.pbtn{flex:2;height:44px;border-radius:10px;background:var(--blue);color:#fff;font-size:15px;font-weight:600;text-align:center}
+.pbtn.ghost{flex:1;background:#fff;color:var(--text2);border:1px solid var(--line2);font-weight:500}
+/* MyDataGuard アプリ */
+.ah{padding:6px 16px 10px}
+.ah h2{font-size:22px;font-weight:600;line-height:1.3}
+.ah p{font-size:12px;color:var(--sub)}
+.apb{padding:0 16px 20px}
+.acard{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px 14px;margin-top:10px}
+.acard:first-child{margin-top:0}
+.acard .ar{display:flex;align-items:center;gap:8px}
+.acard .lg{width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:600;color:#fff;flex:none}
+.acard .ar b{font-size:14px;font-weight:600;flex:1;min-width:0;white-space:nowrap}
+.acard .bid{margin-top:6px;font-size:12px;color:var(--sub)}
+.acard .bid .num{color:var(--text);font-weight:500}
+.acard .ar .num{font-size:12px;color:var(--sub)}
+.acard h3{font-size:14px;font-weight:600;margin-top:8px}
+.acard p{font-size:13px;line-height:1.65;color:var(--text2);margin-top:2px}
+.acard .via{margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F2;font-size:12px;color:var(--sub);line-height:1.5}
+.me{font-size:12px;color:var(--sub);line-height:1.5;background:#F6F7F9;border-radius:10px;padding:8px 12px;margin-bottom:10px}
+.bst{display:flex;align-items:center;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--sub)}
+.stopbtn{margin-top:8px;width:100%;height:34px;border-radius:8px;border:1px solid var(--line2);font-size:13px;font-weight:500;color:var(--text2);text-align:center;background:#fff}
+.stopbtn.on{border-color:var(--blue);color:var(--blue)}
+.lines{margin-top:8px}
+.lines li{display:grid;grid-template-columns:40px 1fr;gap:8px;padding:6px 0;border-top:1px solid #F0F0F2;font-size:12px;line-height:1.55;color:var(--text2)}
+.lines .tm{color:var(--sub)}
+.lines li.new{background:var(--blue-bg);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:6px;border-top-color:transparent}
+.empty{margin-top:28px;text-align:center;font-size:13px;color:var(--sub);line-height:1.6;padding:0 12px}
+.hl{font-size:13px;color:var(--sub);margin:14px 0 6px}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #ECEDEF;background:rgba(255,255,255,.96);padding:6px 0 20px}
+.tabbar button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:#8E8E93;position:relative}
+.tabbar .ic{width:22px;height:22px}
+.tabbar button[aria-current="page"]{color:var(--blue)}
+.tabbar .bd{position:absolute;top:-3px;left:50%;margin-left:6px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--blue);color:#fff;font-size:12px;line-height:16px;text-align:center;font-weight:600}
+/* スマホの通知 */
+.ptoast{position:absolute;left:8px;right:8px;top:46px;z-index:8;display:flex;gap:10px;align-items:flex-start;text-align:left;background:rgba(246,246,248,.98);border-radius:18px;box-shadow:0 10px 30px -6px rgba(0,0,0,.25);padding:10px 12px}
+.ptoast svg{width:34px;height:34px;flex:none}
+.ptoast div{flex:1;min-width:0;line-height:1.4}
+.ptoast .pa{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}
+.ptoast b{display:block;font-size:13px;font-weight:600;color:#000}
+.ptoast span.s{display:block;font-size:13px;color:#3C3C43}
+/* スマホの下のデモ操作 */
+.pdemo{width:300px;background:var(--demo);border-radius:var(--r);padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--demo-t)}
+.pdemo .dr{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.pdemo .dr .dbtn{flex:1;text-align:center}
+.pdemo .dr > span{flex:none;color:#9CA3AF;margin-right:2px}
+.dbtn{font-size:12px;color:#E5E7EB;border:1px solid #4B5563;border-radius:6px;padding:3px 8px;line-height:18px;white-space:nowrap}
+.dbtn:hover{background:var(--demo2)}
+.dbtn[aria-pressed="true"]{background:#fff;color:var(--text);border-color:#fff;font-weight:600}
+.dbtn:disabled{color:#6B7280;border-color:#374151}
+
+/* ===== 幅 760px 以下：店とお客さまをタブで切り替える ===== */
+@media (max-width:760px){
+  body{display:block;background:var(--bg)}
+  .app{width:auto;height:auto;min-height:100vh;display:block;overflow:visible}
+  .demo{flex-wrap:wrap;padding:8px 16px;row-gap:6px;white-space:normal}
+  .steps{flex-wrap:wrap}
+  .scene{flex-basis:100%;border-left:0;padding-left:0;white-space:normal}
+  .mtabs{display:grid;grid-template-columns:1fr 1fr;margin:12px 16px 0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel)}
+  .mtabs button{padding:9px 8px;text-align:center;font-size:14px;color:var(--sub)}
+  .mtabs button[aria-selected="true"]{background:var(--blue);color:#fff;font-weight:500}
+  .mtabs .mdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);margin-left:6px;vertical-align:middle}
+  .mtabs button[aria-selected="true"] .mdot{background:#fff}
+  .main{display:block;padding:12px 16px 24px}
+  body[data-m="shop"] .phonewrap{display:none}
+  body[data-m="phone"] .console{display:none}
+  .console{display:block;border:1px solid var(--line);border-radius:var(--r);overflow:visible}
+  .sb{border-right:0;border-bottom:1px solid var(--line);padding:0 10px 8px;border-radius:var(--r) var(--r) 0 0}
+  .sb-nav{flex-direction:row;overflow-x:auto;scrollbar-width:none}
+  .nv{flex:none}
+  .sb-idea,.sb-user{display:none}
+  .menu{top:100px}
+  .top{padding:0 12px}
+  .search{display:none}
+  .crumb{margin-right:auto}
+  .page{padding:12px;overflow:visible}
+  .phead{flex-wrap:wrap;height:auto}
+  .ctoast{position:static;width:auto;margin:12px 12px 0}
+  .fbar{flex-wrap:wrap}
+  .range{margin-left:0;width:100%}
+  .tbl,.tbl tbody{display:block}
+  .tbl colgroup,.tbl thead{display:none}
+  .tbl tr{display:block;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .tbl td{display:flex;align-items:center;gap:8px;height:auto;padding:3px 0;border:0}
+  .tbl td::before{content:attr(data-label);flex:none;width:80px;font-size:12px;color:var(--sub)}
+  .tbl td.cb,.tbl td.more{display:none}
+  .tbl tr.just{background:#F5F9FF;box-shadow:inset 3px 0 0 var(--blue)}
+  .tbl tr.just td{background:transparent!important}
+  .tbl .r{padding-right:0}
+  .tbl .badge{font-size:13px}
+  .tbl .r{text-align:left}
+  .idc,.bdg{flex-direction:row;flex-wrap:wrap}
+  .pager{flex-wrap:wrap;height:auto;padding:8px 12px;gap:6px}
+  .sendgrid{grid-template-columns:1fr}
+  .kpis{grid-template-columns:1fr}
+  .cfoot{flex-direction:column;align-items:stretch}
+  .phonewrap{background:transparent;padding:0}
+  .phone{width:100%;max-width:360px;height:660px;border-radius:40px}
+  .pdemo{width:100%;max-width:360px}
+}
+</style>
+</head>
+<body data-m="shop">
+<div class="app">
+
+  <header class="demo" id="demo-banner" aria-label="デモ操作（製品の画面ではありません）">
+    <span class="demo-l">デモ操作</span>
+    <ol class="steps" id="flow" aria-label="場面"></ol>
+    <p class="scene" id="scene" aria-live="polite"></p>
+    <span class="demo-r"><span class="demo-note">架空のデータ</span><a class="demo-note" href="../privacy.html" style="color:#9CA3AF">プライバシーポリシー</a><button class="demo-btn" id="reset" data-act="reset">最初からやり直す</button></span>
+  </header>
+
+  <nav class="mtabs" id="mtabs" role="tablist" aria-label="表示する画面"></nav>
+
+  <div class="main">
+    <section class="console" id="shop" aria-label="MyDataGuard 事業者コンソール"></section>
+    <section class="phonewrap" id="phonewrap" aria-label="お客さまのスマホ">
+      <div class="phone"><div class="screen" id="phone"></div></div>
+      <div class="pdemo" id="pdemo" aria-label="デモ操作（お客さまの画面）"></div>
+    </section>
+  </div>
+
+</div>
+<pre id="t-out" hidden></pre>
+<script>
+'use strict';
+/* ===== 状態の計算（純粋な関数。画面には触らない。window.MDG から呼べる） ===== */
+(function(){
+  const ALPHA='23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // 0・1・I・O は読み違えやすいので使わない
+  const copy=o=>JSON.parse(JSON.stringify(o));
+
+  /* 乱数から MDG-XXXX-XXXX を1つ作る。rnd は 0以上1未満を返す関数 */
+  function makeId(rnd){
+    let s='';
+    for(let i=0;i<8;i++) s+=ALPHA[Math.floor(rnd()*ALPHA.length)%ALPHA.length];
+    return 'MDG-'+s.slice(0,4)+'-'+s.slice(4);
+  }
+  /* 番号に出してはいけない語（公開物に出さない社名など）。ソースの禁止語検査に掛からないよう逆さに書いて戻す */
+  const BAD=['GFUM','JFU','KNAB'].map(w=>[...w].reverse().join(''));
+  const hasBad=id=>{ const s=id.replace(/-/g,''); return BAD.some(w=>s.includes(w)); };
+  function usedIds(st){
+    const set=new Set();
+    for(const sh in st.maps) for(const c in st.maps[sh]) set.add(st.maps[sh][c]);
+    return set;
+  }
+  /* 店ごとの対応表（お客さま → 番号）から引く。なければ作る。同じ人×同じ店は同じ番号 */
+  function issueId(st,cust,shop,rnd){
+    const have=(st.maps[shop]||{})[cust];
+    if(have) return {state:st,id:have,isNew:false};
+    const used=usedIds(st); let id;
+    do{ id=makeId(rnd); }while(used.has(id)||hasBad(id));
+    const s=copy(st);
+    if(!s.maps[shop]) s.maps[shop]={};
+    s.maps[shop][cust]=id;
+    return {state:s,id,isNew:true};
+  }
+  function peekId(st,cust,shop){ return (st.maps[shop]||{})[cust]||null; }
+  function custOf(st,shop,id){
+    const m=st.maps[shop]||{};
+    for(const c in m) if(m[c]===id) return c;
+    return null;
+  }
+  function member(st,shop,id){ return (st.members[shop]||[]).find(m=>m.id===id)||null; }
+  function addBook(s,cust,shop,kind,text){ if(s.books[cust]) s.books[cust].push({at:s.clock,shop,kind,text}); }
+
+  /* 予約（MyDataGuardで承認）。すでに会員なら会員を増やさず、初回特典も付けない */
+  function reserve(st,shop,cust,o){
+    const r=issueId(st,cust,shop,o.rnd);
+    const s=copy(r.state); s.clock+=1;
+    const name=s.shops[shop].name;
+    if(member(s,shop,r.id)){
+      s.log.push({at:s.clock,shop,kind:'dup',id:r.id,n:1});
+      addBook(s,cust,shop,'dup',name+'に渡した：番号（2回目の申込・前と同じ番号）');
+      return {state:s,id:r.id,dup:true};
+    }
+    s.members[shop].unshift({id:r.id,checks:o.checks.slice(),booking:o.booking,date:o.date,perk:'used',stopped:false,you:cust==='you'});
+    s.log.push({at:s.clock,shop,kind:'reserve',id:r.id,n:1});
+    addBook(s,cust,shop,'reserve',name+'に渡した：番号・確認の結果（'+o.checks.join('・')+'）');
+    return {state:s,id:r.id,dup:false};
+  }
+  /* 送れるかどうか（本人が止めていたら送れない） */
+  function canSend(st,shop,id){
+    const m=member(st,shop,id);
+    if(!m) return {ok:false,reason:'この番号の会員はいません'};
+    if(m.stopped) return {ok:false,reason:'この番号は本人が停止中のため送れません。本人が通帳で再開すると、また送れます'};
+    return {ok:true,reason:''};
+  }
+  /* 番号あてに送る。MyDataGuard が本人のメールへ中継する（店はアドレスを知らない） */
+  function send(st,shop,id,tpl){
+    const c=canSend(st,shop,id);
+    if(!c.ok) return {state:st,ok:false,reason:c.reason};
+    const s=copy(st); s.clock+=1;
+    s.log.push({at:s.clock,shop,kind:'notify',id,n:1});
+    const cust=custOf(s,shop,id);
+    if(cust && s.msgs[cust]){
+      s.msgs[cust].push({at:s.clock,shop,title:tpl.title,body:tpl.body});
+      addBook(s,cust,shop,'notify',s.shops[shop].name+'から連絡が届いた：'+tpl.title);
+    }
+    return {state:s,ok:true,reason:''};
+  }
+  /* 本人が店ごとに連絡を止める／再開する */
+  function setStop(st,shop,cust,stopped){
+    const id=peekId(st,cust,shop);
+    if(!member(st,shop,id)) return st;
+    const s=copy(st); s.clock+=1;
+    member(s,shop,id).stopped=stopped;
+    addBook(s,cust,shop,stopped?'stop':'restart',s.shops[shop].name+(stopped?'からの連絡を止めた':'からの連絡を再開した'));
+    return s;
+  }
+  function isStopped(st,shop,cust){ const m=member(st,shop,peekId(st,cust,shop)); return !!(m&&m.stopped); }
+  /* 今月の処理件数（金額は出さない） */
+  function countFor(st,shop){
+    const c={reserve:0,notify:0,dup:0};
+    st.log.forEach(e=>{ if(e.shop===shop) c[e.kind]+=e.n; });
+    return c;
+  }
+  function totalMembers(st,shop){
+    return st.shops[shop].others+st.members[shop].length;
+  }
+
+  /* はじめの状態（すべて架空）。seeds：[お客さま, 確認の結果, 最終予約, 登録日, 停止中か, 来店回数] */
+  const SHOPS={
+    hidamari:{name:'ひだまり料理教室',others:204,
+      course:{when:'11月8日（土）10:00〜12:30',title:'秋の和食と日本酒の合わせ方',short:'11/8 秋の和食と日本酒',price:'3,800円',seats:'残り3席',note:'20歳以上の方',perk:'はじめての方は500円引き'},
+      asks:['メール確認済み','20歳以上'],
+      tpl:{title:'前日のご案内',body:'明日11月8日（土）10:00から「秋の和食と日本酒の合わせ方」です。エプロンとふきんをお持ちください。'},
+      month:{reserve:23,notify:41,dup:1},
+      seeds:[
+        ['c1',['メール確認済み','20歳以上'],'11/8 秋の和食と日本酒','11/2',false,1],
+        ['c2',['メール確認済み'],'11/15 はじめてのパン','10/28',false,2],
+        ['c3',['メール確認済み','20歳以上'],'11/8 秋の和食と日本酒','10/20',false,4],
+        ['c4',['メール確認済み'],'10/25 だしの基本','9/14',true,3],
+        ['c7',['メール確認済み','20歳以上'],'11/22 冬の鍋と燗酒','9/2',false,2],
+        ['c8',['メール確認済み'],'11/15 はじめてのパン','8/19',false,6],
+        ['c9',['メール確認済み'],'11/1 季節の和菓子','7/30',false,5],
+        ['c10',['メール確認済み','20歳以上'],'11/8 秋の和食と日本酒','6/11',false,9],
+        ['c11',['メール確認済み'],'10/18 だしの基本','5/26',false,3]]},
+    aoba:{name:'あおば整体院',others:51,
+      course:{when:'11月10日（月）18:00〜19:00',title:'からだの調整 60分',short:'11/10 からだの調整',price:'5,500円',seats:'残り2枠',note:'',perk:'はじめての方は1,000円引き'},
+      asks:['メール確認済み'],
+      tpl:{title:'前日のご案内',body:'明日11月10日（月）18:00からのご予約です。動きやすい服装でお越しください。'},
+      month:{reserve:9,notify:15,dup:0},
+      seeds:[
+        ['c5',['メール確認済み'],'11/10 からだの調整','11/5',false,1],
+        ['c1',['メール確認済み'],'11/12 からだの調整','10/30',false,2],
+        ['c6',['メール確認済み'],'10/27 からだの調整','10/27',true,1],
+        ['c12',['メール確認済み'],'11/11 肩こりの集中ケア','9/18',false,5],
+        ['c13',['メール確認済み'],'11/13 からだの調整','8/2',false,8],
+        ['c14',['メール確認済み'],'11/9 骨盤の調整','6/21',false,12]]}
+  };
+  function initial(rnd){
+    let s={clock:17*60+30,shops:{},maps:{},members:{},log:[],books:{you:[]},msgs:{you:[]} };
+    for(const k in SHOPS){
+      const d=SHOPS[k];
+      s.shops[k]={name:d.name,others:d.others,course:d.course,asks:d.asks,tpl:d.tpl};
+      s.members[k]=[];
+      for(const kind in d.month) s.log.push({at:0,shop:k,kind,n:d.month[kind],seed:true});
+    }
+    for(const k in SHOPS){
+      for(const [c,checks,booking,date,stopped,visits] of SHOPS[k].seeds){
+        const r=issueId(s,c,k,rnd); s=r.state;
+        s.members[k].push({id:r.id,checks,booking,date,perk:'used',stopped,you:false,visits});
+      }
+    }
+    return s;
+  }
+  window.MDG=Object.freeze({makeId,issueId,peekId,custOf,member,reserve,canSend,send,setStop,isStopped,countFor,totalMembers,initial});
+})();
+
+/* ===== 画面 ===== */
+(function(){
+  const M=window.MDG;
+  const $=id=>document.getElementById(id);
+  const YOU={name:'山田 花子',email:'hanako@yamada.example',sub:'hanako.sub@yamada.example'};
+  const TODAY='11/7';
+  const FLOW=['予約','連絡','2回目','止める','件数'];
+  const SCENES={
+    start:[1,'お客さまがスマホで店の予約ページを開いています。右のスマホで「MyDataGuardで予約」を押します'],
+    approve:[1,'承認の画面です。店に渡るものと渡らないものを確かめて「承認」を押します'],
+    reserved:[1,'店の会員一覧に番号だけの1行が増え、お客さまの通帳にも1行記録されました'],
+    send:[2,'店が会員番号を選んで「前日のご案内」を送ります'],
+    sent:[2,'番号あてに送った連絡が、お客さまのスマホに届きました。店にメールアドレスは出ません'],
+    dupApprove:[3,'同じお客さまが、別のメールアドレスで、もう一度初回特典に申し込みます'],
+    dupDone:[3,'同じ人なので番号も同じです。店には「すでに会員」と出て、初回特典は二重に付きません'],
+    stopped:[4,'お客さまが通帳で、この店からの連絡を止めました。店からは送れなくなります'],
+    restarted:[4,'お客さまが連絡を再開しました。店からまた送れます'],
+    count:[5,'今月の予約と連絡の件数です。金額は出していません'],
+    other:[0,'別の店のページです。同じお客さまでも、店が変われば番号も変わります']
+  };
+  /* 店ごとの見た目（予約ページの色面・頭文字） */
+  const LOOK={
+    hidamari:{dom:'hidamari-ryori.example',cat:'料理教室',ini:'ひ',col:'#C9794A'},
+    aoba:{dom:'aoba-seitai.example',cat:'整体',ini:'あ',col:'#4F9A80'}
+  };
+  /* 線のアイコン（1.5px） */
+  const ic=(d,cls)=>'<svg class="ic'+(cls?' '+cls:'')+'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>';
+  const I={
+    home:ic('<path d="M3 9.2 10 3.8l7 5.4V16a1 1 0 0 1-1 1h-3.8v-4.6H7.8V17H4a1 1 0 0 1-1-1z"/>'),
+    users:ic('<circle cx="8" cy="7" r="3"/><path d="M2.5 16.5c.6-2.8 2.8-4.5 5.5-4.5s4.9 1.7 5.5 4.5"/><path d="M13 4.3a3 3 0 0 1 0 5.4M15 12.3c1.3.7 2.1 2 2.5 4.2"/>'),
+    cal:ic('<rect x="3" y="4.5" width="14" height="12.5" rx="2"/><path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4"/>'),
+    mail:ic('<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="m3.2 5.5 6.8 5.3 6.8-5.3"/>'),
+    chart:ic('<path d="M3.5 16.5h13M6 13.5V10M10 13.5V5.5M14 13.5V8"/>'),
+    plug:ic('<path d="M7.5 3v3.5M12.5 3v3.5M5.5 6.5h9V9a4.5 4.5 0 0 1-9 0zM10 13.5V17"/>'),
+    sliders:ic('<path d="M3 6h8.5M14.5 6H17M3 14h2.5M8.5 14H17"/><circle cx="13" cy="6" r="1.5"/><circle cx="7" cy="14" r="1.5"/>'),
+    truck:ic('<path d="M2.5 5.5h9v8h-9zM11.5 8.5h3l2.5 2.6v2.4h-5.5"/><circle cx="6" cy="14.5" r="1.5"/><circle cx="14" cy="14.5" r="1.5"/>'),
+    refund:ic('<path d="M4 8h8.5a3.5 3.5 0 0 1 0 7H8"/><path d="M7 5 4 8l3 3"/>'),
+    shield:ic('<path d="M10 2.8 16 5v4.4c0 3.7-2.6 6.4-6 7.8-3.4-1.4-6-4.1-6-7.8V5z"/><path d="m7.6 10 1.8 1.8 3.2-3.4"/>'),
+    search:ic('<circle cx="9" cy="9" r="5.5"/><path d="m13.2 13.2 3.6 3.6"/>'),
+    bell:ic('<path d="M5 13.5V9a5 5 0 0 1 10 0v4.5l1.4 1.8H3.6z"/><path d="M8.4 17.4a1.7 1.7 0 0 0 3.2 0"/>'),
+    help:ic('<circle cx="10" cy="10" r="7.5"/><path d="M8 7.9a2 2 0 1 1 2.7 1.9c-.5.2-.7.6-.7 1v.6"/><path d="M10 13.9v.1"/>'),
+    updown:ic('<path d="m7 8 3-3 3 3M7 12l3 3 3-3"/>'),
+    chevR:ic('<path d="m8 5 5 5-5 5"/>'),
+    chevL:ic('<path d="m12 5-5 5 5 5"/>'),
+    down:ic('<path d="M10 3.5v9M6.5 9 10 12.5 13.5 9M4 16.5h12"/>'),
+    dots:ic('<path d="M5 10h.01M10 10h.01M15 10h.01" stroke-width="2.4"/>'),
+    info:ic('<circle cx="10" cy="10" r="7.5"/><path d="M10 9v4.8M10 6.4v.1"/>'),
+    check:ic('<path d="m5 10.5 3 3 7-7"/>'),
+    checkc:ic('<circle cx="10" cy="10" r="7.5"/><path d="m6.8 10.2 2.2 2.2 4.2-4.6"/>'),
+    warn:ic('<path d="M10 3.2 17.8 16.5H2.2z"/><path d="M10 8.5v3.6M10 14.2v.1"/>'),
+    x:ic('<path d="m5.5 5.5 9 9M14.5 5.5l-9 9"/>'),
+    lock:ic('<rect x="5" y="9" width="10" height="8" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/>'),
+    menu:ic('<path d="M3.5 6h13M3.5 10h13M3.5 14h13"/>'),
+    yen:ic('<rect x="2.5" y="5" width="15" height="10" rx="2"/><circle cx="10" cy="10" r="2"/>'),
+    person:ic('<circle cx="10" cy="7" r="3"/><path d="M4 16.5c.7-3 3-4.5 6-4.5s5.3 1.5 6 4.5"/>'),
+    book:ic('<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16v12H5.5A1.5 1.5 0 0 0 4 16.5z"/><path d="M4 16.5A1.5 1.5 0 0 0 5.5 18H16v-3M7.5 6.5h5M7.5 9h3.5"/>'),
+    send:ic('<path d="M17 3 9 11M17 3l-5 14-3-6-6-3z"/>'),
+    plus:ic('<path d="M10 4.5v11M4.5 10h11"/>')
+  };
+  const LOGO='<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#2563EB"/><path d="M12 5.5l5 2v4c0 3.3-2.1 5.7-5 6.9-2.9-1.2-5-3.6-5-6.9v-4z" fill="none" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="m9.6 12 1.7 1.7 3.2-3.4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const LOGOW='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l6 2.4v4.6c0 3.9-2.5 6.8-6 8.2-3.5-1.4-6-4.3-6-8.2V6.4z" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><path d="m9.2 11.8 2 2 3.6-3.9" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const SIG='<svg viewBox="0 0 18 12" width="17" height="11" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>';
+  const WIFI='<svg viewBox="0 0 16 12" width="15" height="11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M1.5 4.2a9.5 9.5 0 0 1 13 0M4 7a6 6 0 0 1 8 0"/><circle cx="8" cy="9.8" r="1.3" fill="currentColor" stroke="none"/></svg>';
+  const BATT='<svg viewBox="0 0 27 12" width="25" height="12" aria-hidden="true"><rect x=".5" y=".5" width="22" height="11" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="17" height="8" rx="1.6" fill="currentColor"/><path d="M24.5 4v4c.8-.3 1.3-1 1.3-2s-.5-1.7-1.3-2z" fill="currentColor" opacity=".45"/></svg>';
+  const rnd=()=>{ const a=new Uint32Array(1); crypto.getRandomValues(a); return a[0]/4294967296; };
+  const tm=at=>'11/7 '+String(Math.floor(at/60)).padStart(2,'0')+':'+String(at%60).padStart(2,'0');
+
+  let st, ui, toastTimer=null;
+  const testMode=/^t_[A-Za-z0-9_]+$/.test(location.hash.slice(1));
+  function fresh(){
+    st=M.initial(rnd);
+    ui={shop:'hidamari',stab:'members',pview:'page',pending:null,news:{},sel:{},pnote:{},toast:null,scene:'start',m:'shop',dot:null,just:null,newBook:-1,filter:'all',menu:false,bell:2};
+  }
+
+  /* ---- 上：デモ操作の帯 ---- */
+  function renderTop(){
+    const [n,text]=SCENES[ui.scene];
+    $('flow').innerHTML=FLOW.map((f,i)=>{
+      const c=n===i+1?'on':(n>i+1?'past':'');
+      return `<li class="${c}"${c==='on'?' aria-current="step"':''}><span class="n">${i+1}</span>${f}</li>`;
+    }).join('');
+    $('scene').textContent=(n?'':'別の店：')+text;
+    $('mtabs').innerHTML=[['shop','店の画面'],['phone','お客さまのスマホ']].map(([v,l])=>
+      `<button role="tab" data-act="m" data-v="${v}" aria-selected="${ui.m===v}">${l}${ui.dot===v?'<i class="mdot" aria-label="更新あり"></i>':''}</button>`).join('');
+    document.body.dataset.m=ui.m;
+  }
+
+  /* ---- 左：事業者コンソール ---- */
+  const TITLE={members:'会員',send:'連絡',count:'処理件数'};
+  function sidebar(k){
+    const s=st.shops[k];
+    const navs=[['home','ホーム',I.home],['members','会員',I.users],['resv','予約',I.cal],['send','連絡',I.mail],['count','処理件数',I.chart],['link','連携設定',I.plug],['set','設定',I.sliders]];
+    return `<aside class="sb">
+      <div class="sb-brand">${LOGO}<span><b>MyDataGuard</b><small>事業者コンソール</small></span></div>
+      <button class="sb-shop" data-act="menu" aria-haspopup="true" aria-expanded="${ui.menu}">
+        <span class="av">${LOOK[k].ini}</span><span class="t"><b>${s.name}</b><small>会員 ${M.totalMembers(st,k)}人</small></span>${I.updown}
+      </button>
+      ${ui.menu?`<div class="menu fade" role="menu"><div class="mh">店を切り替える</div>${Object.keys(st.shops).map(x=>
+        `<button role="menuitem" data-act="sshop" data-shop="${x}"><span class="av">${LOOK[x].ini}</span>${st.shops[x].name}${x===k?I.check:''}</button>`).join('')}</div>`:''}
+      <nav class="sb-nav" aria-label="メニュー">${navs.map(([v,l,icon])=>TITLE[v]
+        ?`<button class="nv" data-act="stab" data-stab="${v}"${ui.stab===v?' aria-current="page"':''}>${icon}${l}</button>`
+        :`<button class="nv" type="button" title="デモでは開きません">${icon}${l}</button>`).join('')}</nav>
+      <div class="sb-idea" id="idea" aria-label="構想中の機能">
+        <div class="sb-sec">構想中の機能 <span class="soon">近日公開</span></div>
+        <button disabled title="構想：今の試験はメールの確認だけです">${I.truck}発送を番号で頼む</button>
+        <button disabled title="構想：今の試験はメールの確認だけです">${I.refund}返金を番号で頼む</button>
+        <button disabled title="構想：今の試験はメールの確認だけです">${I.shield}「本人確認済み」の印</button>
+        <p>今の試験は、<br>メールの確認だけです</p>
+      </div>
+      <div class="sb-user"><span class="av">店</span><span class="t"><b>店長</b><small>${s.name}</small></span>${I.chevR}</div>
+    </aside>`;
+  }
+  function membersBlock(k){
+    const s=st.shops[k], rows=st.members[k], total=M.totalMembers(st,k), f=ui.filter;
+    const stopped=rows.filter(m=>m.stopped).length;
+    const shown=rows.filter(m=>f==='all'||(f==='off'?m.stopped:!m.stopped));
+    const cnt=f==='all'?total:(f==='off'?stopped:total-stopped);
+    const pages=Math.max(1,Math.ceil(cnt/10));
+    const tr=m=>{
+      const sp=m.booking.indexOf(' '), d=m.booking.slice(0,sp), t=m.booking.slice(sp+1);
+      return `<tr class="mrow${ui.just===m.id?' just':''}" data-id="${m.id}"${m.you?' data-you="1"':''} data-perk="${m.perk}">
+        <td class="cb" data-label=""><span class="box" aria-hidden="true"></span></td>
+        <td data-label="会員番号"><div class="idc"><span class="id">${m.id}</span>${m.date===TODAY?'<span class="badge blue sm">新規</span>':''}</div></td>
+        <td data-label="確認の結果"><div class="bdg">${m.checks.map(c=>`<span class="tagc">${c}</span>`).join('')}</div></td>
+        <td data-label="最終予約"><div class="bk"><span>${d}</span><small>${t}</small></div></td>
+        <td class="r" data-label="来店回数">${m.visits||0}回</td>
+        <td data-label="登録日">${m.date}</td>
+        <td data-label="連絡">${m.stopped?'<span class="badge gray"><i></i>本人が停止中</span>':'<span class="badge ok"><i></i>届く</span>'}</td>
+        <td class="more"><button class="ib" type="button" aria-label="操作">${I.dots}</button></td>
+      </tr>`;
+    };
+    const chip=(v,l,c)=>`<button class="chip" data-act="filter" data-v="${v}" aria-pressed="${f===v}">${l}<span class="c num">${c}</span></button>`;
+    return `<div class="mblock" id="members-${k}" ${k===ui.shop?'':'hidden'}>
+      <div class="infobar">${I.lock}<p><b>氏名・住所・電話・メールは、ここには保存されていません。</b>連絡は会員番号あてに送ると本人に届きます</p></div>
+      <div class="fbar">${chip('all','すべて',total)}${chip('ok','連絡が届く',total-stopped)}${chip('off','停止中',stopped)}
+        <span class="range num">${cnt}件中 1–${shown.length}件</span></div>
+      <div class="tw">
+        <table class="tbl" aria-label="${s.name}の会員一覧">
+          <colgroup><col style="width:32px"><col style="width:124px"><col style="width:178px"><col><col style="width:72px"><col style="width:56px"><col style="width:100px"><col style="width:28px"></colgroup>
+          <thead><tr><th class="cb"><span class="box" aria-hidden="true"></span></th><th>会員番号</th><th>確認の結果</th><th>最終予約</th><th class="r">来店回数</th><th>登録日</th><th>連絡</th><th></th></tr></thead>
+          <tbody>${shown.map(tr).join('')}</tbody>
+        </table>
+        <div class="pager"><span class="num">表示中 ${shown.length}件</span>
+          <div class="pages"><span>${I.chevL}</span><button aria-current="page">1</button>${pages>1?'<button>2</button>':''}${pages>2?'<button>3</button>':''}${pages>4?'<span>…</span>':''}${pages>3?`<button class="num">${pages}</button>`:''}<span>${I.chevR}</span></div>
+        </div>
+      </div>
+    </div>`;
+  }
+  function sendTab(k){
+    const rows=st.members[k];
+    let sel=ui.sel[k];
+    if(!rows.some(m=>m.id===sel)){ const y=rows.find(m=>m.you); sel=(y||rows[0]).id; }
+    const can=M.canSend(st,k,sel), tpl=st.shops[k].tpl, sm=M.member(st,k,sel);
+    const stBadge=m=>m.stopped?'<span class="badge gray"><i></i>本人が停止中</span>':'<span class="badge ok"><i></i>届く</span>';
+    return `<div class="sendgrid">
+      <div class="card">
+        <div class="ch">新しい連絡<small>会員番号あてに送ります</small></div>
+        <div class="frow"><label>宛先</label><div class="field"><span class="tok num">${sel}</span>${stBadge(sm)}<span class="hint">番号あて</span></div></div>
+        <div class="frow"><label>件名</label><div class="field">${tpl.title}</div></div>
+        <div class="frow tall"><label>本文</label><div class="field area">${tpl.body}</div></div>
+        <div class="cfoot">
+          ${can.ok?`<p class="reason" id="send-reason">番号あてに送ります。宛先のメールアドレスは店に表示されません</p>`
+            :`<p class="reason ng" id="send-reason">${I.warn}<span>${can.reason}</span></p>`}
+          <button class="btn pri" id="send-btn" data-act="send" data-id="${sel}" ${can.ok?'':'disabled'}>${I.send}送信する</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch">宛先を選ぶ<small>${rows.length}件</small></div>
+        <div class="picks" role="radiogroup" aria-label="送る相手">
+          ${rows.map(m=>`<button role="radio" id="pick-${m.id}" data-act="pick" data-id="${m.id}" aria-checked="${m.id===sel}">
+            <span class="rd"></span><span class="pi"><b class="num">${m.id}</b><small>${m.booking}</small></span>${stBadge(m)}</button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }
+  function countTab(k){
+    const c=M.countFor(st,k);
+    const mine=st.log.filter(e=>e.shop===k&&!e.seed);
+    const d=kind=>mine.filter(e=>e.kind===kind).reduce((a,e)=>a+e.n,0);
+    const label={reserve:'予約',notify:'連絡',dup:'2回目の申込（特典なし）'};
+    const kpi=(kind,l,sub)=>{ const n=d(kind);
+      return `<div class="card kpi"><div class="kl">${l}</div><div class="ks">${sub}</div>
+        <div class="kv"><b id="cnt-${kind}">${c[kind]}</b><span>件</span></div>
+        <div class="kd${n?' up':''}">このデモで +${n}</div></div>`; };
+    return `<div class="kpis">
+        ${kpi('reserve','予約','MyDataGuardで受けた予約')}
+        ${kpi('notify','連絡','番号あてに送った連絡')}
+        ${kpi('dup','2回目の申込','同じ人・特典なし')}
+      </div>
+      <p class="note">${I.info}料金は検討中です。11月1日〜7日の件数を表示しています</p>
+      <div class="card dcard">
+        <div class="ch">明細<small>このデモで行った処理</small></div>
+        <div class="dbody">
+        <table class="dt" aria-label="このデモで行った処理">
+          <colgroup><col style="width:150px"><col style="width:220px"><col></colgroup>
+          <thead><tr><th>日時</th><th>処理</th><th>会員番号</th></tr></thead>
+          <tbody>${mine.length?mine.slice().reverse().map(e=>`<tr><td class="num">${tm(e.at)}</td><td>${label[e.kind]}</td><td class="id num">${e.id}</td></tr>`).join('')
+            :'<tr><td class="empty" colspan="3">このデモで行った処理は、まだありません</td></tr>'}</tbody>
+        </table>
+        </div>
+        <div class="dfoot"><span class="num">${mine.length}件</span></div>
+      </div>`;
+  }
+  function consoleToast(k){
+    const n=ui.news[k]; if(!n||n.kind==='join') return '';
+    const tpl=st.shops[k].tpl;
+    const box=(kind,icon,b,sp)=>`<div class="ctoast fade" role="status"><span class="ti ${kind}">${icon}</span><div><b>${b}</b><span>${sp}</span></div><button class="ib" data-act="dismiss" aria-label="閉じる">${I.x}</button></div>`;
+    if(n.kind==='dup') return box('info',I.info,`すでに会員です（同じ番号 ${n.id}）`,'別のメールアドレスでの申込でしたが、同じ人です。初回特典は1回目の予約で使用済みのため付けていません');
+    if(n.kind==='sent') return box('ok',I.checkc,`${n.id} あてに「${tpl.title}」を送りました`,'番号あてに送信。宛先のメールアドレスは店に表示されません');
+    if(n.kind==='stopped') return box('warn',I.warn,`${n.id} は本人が連絡を止めました`,'この番号には送れません。本人が再開すると、また送れます');
+    if(n.kind==='restarted') return box('ok',I.checkc,`${n.id} は本人が連絡を再開しました`,'この番号に、また送れます');
+    return '';
+  }
+  function renderShop(){
+    const k=ui.shop, s=st.shops[k], total=M.totalMembers(st,k);
+    const head={
+      members:`<h1>会員</h1><span class="pill num">${total}</span><div class="act"><button class="btn sec" type="button" title="デモでは使えません">${I.down}CSVで書き出す</button></div>`,
+      send:`<h1>連絡</h1><div class="act"><button class="btn sec" type="button" title="デモでは使えません">送信の履歴</button><button class="btn pri" type="button">${I.plus}連絡を作成</button></div>`,
+      count:`<h1>処理件数</h1><div class="act"><div class="seg" role="group" aria-label="期間"><button aria-pressed="true" type="button">今月</button><button aria-pressed="false" type="button">先月</button><button aria-pressed="false" type="button">期間を指定</button></div></div>`
+    }[ui.stab];
+    $('shop').innerHTML=`${sidebar(k)}
+      <div class="cmain">
+        <div class="top">
+          <div class="crumb">${s.name}${I.chevR}<b>${TITLE[ui.stab]}</b></div>
+          <div class="search">${I.search}会員番号で検索<kbd>/</kbd></div>
+          <button class="ib" type="button" aria-label="お知らせ ${ui.bell}件">${I.bell}<span class="dotn num">${ui.bell}</span></button>
+          <button class="ib" type="button" aria-label="ヘルプ">${I.help}</button>
+        </div>
+        ${consoleToast(k)}
+        <div class="page">
+          <div class="phead">${head}</div>
+          <div id="tab-members" ${ui.stab==='members'?'':'hidden'}>${Object.keys(st.shops).map(membersBlock).join('')}</div>
+          <div id="tab-send" ${ui.stab==='send'?'':'hidden'}>${sendTab(k)}</div>
+          <div id="tab-count" ${ui.stab==='count'?'':'hidden'}>${countTab(k)}</div>
+        </div>
+      </div>`;
+  }
+
+  /* ---- 右：お客さまのスマホ ---- */
+  function pageView(){
+    const k=ui.shop, s=st.shops[k], c=s.course, L=LOOK[k], myId=M.peekId(st,'you',k), joined=!!(myId&&M.member(st,k,myId));
+    const note=ui.pnote[k];
+    const done=note==='dup'
+      ? `<div class="done info"><div class="dh">${I.info}この店では、すでに会員です</div><p>番号は前と同じ <span class="id num">${myId}</span> です。初回特典は1回目の予約で使っています</p></div>`
+      : `<div class="done"><div class="dh">${I.checkc}予約しました</div><p>${c.short}<br>店に渡したのは番号 <span class="id num">${myId}</span> と確認の結果だけです。</p><button class="lnk" data-act="pview" data-v="book">MyDataGuardの通帳を見る</button></div>`;
+    return `<div class="addr">${I.lock}${L.dom}</div>
+      <div class="shd"><span class="lg" style="background:${L.col}">${L.ini}</span><b>${s.name}</b>${I.menu}</div>
+      <div class="hero ${k}"><span>${L.cat}</span></div>
+      <div class="pc">
+        <div class="ptitle">${c.title}</div>
+        <ul class="pmeta">
+          <li>${I.cal}${c.when}</li>
+          <li>${I.yen}${c.price}<span class="seat">${c.seats}</span></li>
+          ${c.note?`<li>${I.person}${c.note}</li>`:''}
+        </ul>
+        <div class="perk"><b>初回特典</b>${c.perk}</div>
+        ${joined?done:`<button class="mdgbtn" id="p-reserve" data-act="reserve">${LOGOW}MyDataGuardで予約</button>
+          <p class="mdgsub">名前・住所・電話・メールの入力はありません</p>
+          <button class="alt" type="button">通常の会員登録はこちら</button>`}
+      </div>`;
+  }
+  function approveView(){
+    const p=ui.pending; if(!p) return '';
+    const s=st.shops[p.shop], ageAsk=s.asks.includes('20歳以上');
+    const CB=on=>`<span class="cbx${on?'':' off'}">${I.check}</span>`;
+    return `<div class="grab"></div>
+      <div class="shh">${LOGO}MyDataGuard<button class="x ib" data-act="cancel" aria-label="閉じる">${I.x}</button></div>
+      <div class="sht">${s.name}に、予約に必要な情報を渡します<small>${p.dup?'初回特典つきで、もう一度申し込みます':'予約を申し込みます'}</small></div>
+      <div class="acct"><span class="av">山</span><span class="t"><b>${YOU.name}</b><small>${p.dup?YOU.sub:YOU.email}</small></span></div>
+      <div class="shl">店に渡るもの</div>
+      <ul class="perm">
+        <li>${CB(true)}<span class="pt"><b>会員番号</b><small><span class="num">${p.id}</span>・${p.dup?'前と同じ番号':'この店だけの番号'}</small></span></li>
+        <li>${CB(true)}<span class="pt"><b>メール確認済み</b><small>確認の結果だけ。アドレスは渡しません</small></span></li>
+        ${ageAsk?`<li><button id="p-age" role="checkbox" data-act="age" aria-checked="${p.age}">${CB(p.age)}<span class="pt"><b>20歳以上</b><small>本人が選びます。生年月日は渡しません</small></span></button></li>`:''}
+        <li>${CB(true)}<span class="pt"><b>予約</b><small>${s.course.short}</small></span></li>
+      </ul>
+      <div class="shl">店に渡らないもの</div>
+      <div class="noperm"><s>名前</s><s>住所</s><s>電話</s><s>メール</s></div>
+      <div class="shb"><button class="pbtn ghost" data-act="cancel">やめる</button><button class="pbtn" id="p-approve" data-act="approve">承認</button></div>`;
+  }
+  function homeView(){
+    const ks=Object.keys(st.shops).filter(k=>M.member(st,k,M.peekId(st,'you',k)));
+    const last=st.msgs.you[st.msgs.you.length-1];
+    return `<div class="ah"><h2>ホーム</h2><p>${YOU.name}さん</p></div>
+      <div class="apb">
+        <div class="hl">つながっている店</div>
+        ${ks.length?ks.map(k=>`<div class="acard"><div class="ar"><span class="lg" style="background:${LOOK[k].col}">${LOOK[k].ini}</span><b>${st.shops[k].name}</b></div><div class="bid">会員番号 <span class="num">${M.peekId(st,"you",k)}</span></div></div>`).join('')
+          :'<p class="empty">まだありません。店で「MyDataGuardで予約」を使うと、ここに出ます</p>'}
+        <div class="hl">最近のお知らせ</div>
+        ${last?`<div class="acard"><div class="ar"><b>${st.shops[last.shop].name}</b><span class="num">${tm(last.at).slice(5)}</span></div><h3>${last.title}</h3></div>`:'<p class="empty">まだ連絡はありません</p>'}
+      </div>`;
+  }
+  function msgsView(){
+    const list=st.msgs.you.slice().reverse();
+    return `<div class="ah"><h2>お知らせ</h2><p>店から番号あてに送られた連絡</p></div>
+      <div class="apb">${list.length?list.map(m=>`<div class="acard">
+        <div class="ar"><span class="lg" style="background:${LOOK[m.shop].col}">${LOOK[m.shop].ini}</span><b>${st.shops[m.shop].name}</b><span class="num">${tm(m.at).slice(5)}</span></div>
+        <h3>${m.title}</h3><p>${m.body}</p>
+        <div class="via">MyDataGuard が ${YOU.email} に中継しました。店はこのアドレスを知りません</div>
+      </div>`).join(''):'<p class="empty">まだ連絡はありません</p>'}</div>`;
+  }
+  function bookView(){
+    const lines=st.books.you, order=[];
+    lines.forEach(l=>{ if(!order.includes(l.shop)) order.push(l.shop); });
+    return `<div class="ah"><h2>情報の通帳</h2><p>どの店に何を渡したか</p></div>
+      <div class="apb">
+      <p class="me">あなたの名前・メールは MyDataGuard にあります：${YOU.name}・${YOU.email}</p>
+      ${order.length?order.map(k=>{
+        const id=M.peekId(st,'you',k), off=M.isStopped(st,k,'you');
+        const mine=lines.map((l,i)=>[l,i]).filter(([l])=>l.shop===k).reverse();
+        return `<div class="acard" data-shop="${k}">
+          <div class="ar"><span class="lg" style="background:${LOOK[k].col}">${LOOK[k].ini}</span><b>${st.shops[k].name}</b></div><div class="bid">この店での番号 <span class="num">${id}</span></div>
+          <div class="bst"><span>店からの連絡</span>${off?'<span class="badge gray"><i></i>止めています</span>':'<span class="badge ok"><i></i>届く</span>'}</div>
+          <button class="stopbtn${off?' on':''}" data-act="stop" data-stop="${k}">${off?'連絡を再開する':'この店からの連絡を止める'}</button>
+          <ol class="lines">${mine.map(([l,i])=>`<li class="${i===ui.newBook?'new':''}"><span class="tm num">${tm(l.at).slice(5)}</span><span>${l.text}</span></li>`).join('')}</ol>
+        </div>`;}).join('')
+      :'<p class="empty">まだ記録はありません。店で予約すると、ここに1行ずつ記録されます</p>'}</div>`;
+  }
+  function renderPhone(){
+    const v=ui.pview, unread=st.msgs.you.length, app=['home','msgs','book'].includes(v), k=ui.shop;
+    const joined=!!M.member(st,k,M.peekId(st,'you',k));
+    const tabs=[['home','ホーム',I.home],['book','通帳',I.book],['msgs','お知らせ',I.bell]];
+    $('phone').innerHTML=`
+      <div class="sbar"><span class="num">${tm(st.clock).slice(5)}</span><span class="island"></span><span class="sic">${SIG}${WIFI}${BATT}</span></div>
+      ${ui.toast?`<button class="ptoast fade" id="toast" data-act="toast">${LOGO}<div><span class="pa"><span>MyDataGuard</span><span>今</span></span><b>${st.shops[ui.toast.shop].name}から連絡が届きました</b><span class="s">${ui.toast.title}（MyDataGuard の中継）</span></div></button>`:''}
+      <div class="pv">
+        <div id="v-page" ${v==='page'||v==='approve'?'':'hidden'}>${pageView()}</div>
+        <div id="v-home" ${v==='home'?'':'hidden'}>${homeView()}</div>
+        <div id="msgs" ${v==='msgs'?'':'hidden'}>${msgsView()}</div>
+        <div id="book" ${v==='book'?'':'hidden'}>${bookView()}</div>
+      </div>
+      ${app?`<nav class="tabbar" aria-label="MyDataGuard アプリ">${tabs.map(([x,l,icon])=>`<button data-act="pview" data-v="${x}"${v===x?' aria-current="page"':''}>${icon}${l}${x==='msgs'&&unread?`<span class="bd num">${unread}</span>`:''}</button>`).join('')}</nav>`:''}
+      ${v==='approve'?`<div class="scrim"></div><div class="sheet slide" id="v-approve">${approveView()}</div>`:''}
+      <span class="hbar"></span>`;
+    $('pdemo').innerHTML=`
+      <div class="dr"><span>店のページ</span>${Object.keys(st.shops).map(x=>`<button class="dbtn" data-act="pshop" data-shop="${x}" aria-pressed="${!app&&x===k}">${st.shops[x].name}</button>`).join('')}</div>
+      <div class="dr"><button class="dbtn" data-act="papp" aria-pressed="${app}">MyDataGuardアプリ</button><button class="dbtn" id="p-again" data-act="again" ${joined?'':'disabled'} title="${joined?'':'1回目の予約のあとで試せます'}">別のメールで再申込</button></div>`;
+  }
+
+  function render(){ renderTop(); renderShop(); renderPhone(); }
+
+  /* ---- 操作 ---- */
+  function openApprove(dup){
+    const k=ui.shop, r=M.issueId(st,'you',k,rnd);
+    st=r.state;
+    ui.pending={shop:k,id:r.id,dup,age:true};
+    ui.pview='approve'; ui.scene=dup?'dupApprove':'approve';
+  }
+  function showToast(t){
+    ui.toast=t;
+    clearTimeout(toastTimer);
+    if(!testMode) toastTimer=setTimeout(()=>{ ui.toast=null; renderPhone(); },6000);
+  }
+  const ACT={
+    reserve(){ openApprove(false); },
+    again(){ openApprove(true); },
+    age(){ ui.pending.age=!ui.pending.age; },
+    cancel(){ ui.pending=null; ui.pview='page'; ui.scene='start'; },
+    approve(){
+      const p=ui.pending, s=st.shops[p.shop];
+      const checks=s.asks.filter(c=>c!=='20歳以上'||p.age);
+      const r=M.reserve(st,p.shop,'you',{checks,booking:s.course.short,date:TODAY,rnd});
+      st=r.state; ui.pending=null; ui.shop=p.shop; ui.stab='members'; ui.pview='page'; ui.filter='all';
+      ui.news[p.shop]={kind:r.dup?'dup':'join',id:r.id}; ui.bell++;
+      ui.pnote[p.shop]=r.dup?'dup':'join';
+      ui.just=r.dup?null:r.id; ui.newBook=st.books.you.length-1;
+      ui.scene=r.dup?'dupDone':'reserved'; ui.dot='shop';
+    },
+    stab(el){ ui.stab=el.dataset.stab; ui.just=null; delete ui.news[ui.shop]; if(ui.stab==='count') ui.scene='count'; else if(ui.stab==='send') ui.scene=M.isStopped(st,ui.shop,'you')?'stopped':'send'; },
+    pick(el){ ui.sel[ui.shop]=el.dataset.id; },
+    send(el){
+      const k=ui.shop, r=M.send(st,k,el.dataset.id,st.shops[k].tpl);
+      if(!r.ok) return;
+      st=r.state; ui.sel[k]=el.dataset.id;
+      ui.news[k]={kind:'sent',id:el.dataset.id}; ui.bell++;
+      if(M.custOf(st,k,el.dataset.id)==='you'){ showToast({shop:k,title:st.shops[k].tpl.title}); ui.newBook=st.books.you.length-1; ui.dot='phone'; }
+      ui.scene='sent';
+    },
+    toast(){ ui.toast=null; ui.pview='msgs'; },
+    pview(el){ ui.pview=el.dataset.v; if(ui.pview!=='approve') ui.pending=null; },
+    papp(){ ui.pview='home'; ui.pending=null; },
+    stop(el){
+      const k=el.dataset.stop, off=!M.isStopped(st,k,'you');
+      st=M.setStop(st,k,'you',off); ui.shop=k;
+      ui.news[k]={kind:off?'stopped':'restarted',id:M.peekId(st,'you',k)}; ui.bell++;
+      ui.newBook=st.books.you.length-1; ui.scene=off?'stopped':'restarted'; ui.dot='shop';
+    },
+    pshop(el){ ui.shop=el.dataset.shop; ui.pview='page'; ui.pending=null; ui.just=null; ui.scene=ui.shop==='hidamari'?'start':'other'; },
+    sshop(el){ ui.shop=el.dataset.shop; ui.just=null; },
+    menu(){ ui.menu=!ui.menu; },
+    filter(el){ ui.filter=el.dataset.v; },
+    dismiss(){ delete ui.news[ui.shop]; },
+    m(el){ ui.m=el.dataset.v; if(ui.dot===ui.m) ui.dot=null; },
+    reset(){ clearTimeout(toastTimer); fresh(); }
+  };
+  document.addEventListener('click',e=>{
+    const el=e.target.closest('[data-act]');
+    if(!el||el.disabled) return;
+    const f=ACT[el.dataset.act]; if(!f) return;
+    if(el.dataset.act!=='send'){ ui.toast=null; clearTimeout(toastTimer); }
+    if(el.dataset.act!=='menu') ui.menu=false;
+    f(el); render();
+  });
+
+  /* ===== テスト用の入口：#t_名前 で、その操作を順に自動で行う（末尾 _phone で幅の狭い画面はスマホ側を表示） ===== */
+  function tap(sel){
+    const el=document.querySelector(sel);
+    if(!el) throw new Error('見つかりません: '+sel);
+    if(el.disabled) throw new Error('押せません: '+sel);
+    el.click();
+  }
+  const reserveSteps=['#p-reserve','#p-approve'];
+  const SCN={
+    t_base:[],
+    t_approve:['#p-reserve'],
+    t_reserve:reserveSteps,
+    t_notify:[...reserveSteps,'[data-stab="send"]','#send-btn','#toast'],
+    t_dup:[...reserveSteps,'#p-again','#p-approve'],
+    t_stop:[...reserveSteps,'[data-act="pview"][data-v="book"]','[data-stop="hidamari"]','[data-stab="send"]'],
+    t_restart:[...reserveSteps,'[data-act="pview"][data-v="book"]','[data-stop="hidamari"]','[data-stop="hidamari"]','[data-stab="send"]'],
+    t_twoshops:[...reserveSteps,'[data-act="pshop"][data-shop="aoba"]','#p-reserve','#p-approve','[data-act="pview"][data-v="book"]'],
+    t_count:[...reserveSteps,'[data-stab="send"]','#send-btn','#send-btn','#p-again','#p-approve','[data-stab="count"]']
+  };
+  function pureCheck(){
+    let seed=7; const r=()=>{ seed=(seed*1103515245+12345)%2147483648; return seed/2147483648; };
+    const s=M.initial(r), snap=JSON.stringify(s);
+    const a1=M.issueId(s,'p','hidamari',r), a2=M.issueId(a1.state,'p','hidamari',r);
+    const b1=M.issueId(a2.state,'p','aoba',r), c1=M.issueId(b1.state,'q','hidamari',r);
+    const tpl={title:'前日のご案内',body:'x'};
+    const t1=M.reserve(s,'hidamari','you',{checks:['メール確認済み'],booking:'x',date:'11/7',rnd:r}).state, t1snap=JSON.stringify(t1);
+    const id=M.peekId(t1,'you','hidamari');
+    const can_before=M.canSend(t1,'hidamari',id).ok;
+    let t2=M.send(t1,'hidamari',id,tpl).state; t2=M.send(t2,'hidamari',id,tpl).state;
+    const t3=M.reserve(t2,'hidamari','you',{checks:['メール確認済み'],booking:'x',date:'11/7',rnd:r}).state;
+    const off=M.setStop(t3,'hidamari','you',true), on=M.setStop(off,'hidamari','you',false);
+    const b=M.countFor(s,'hidamari'), a=M.countFor(t3,'hidamari');
+    /* 乱数を「M U F G B V 2 2」の順に出す並びに固定し、そのあとは通常の乱数に戻す */
+    const AL='23456789ABCDEFGHJKLMNPQRSTUVWXYZ', seq=[...'22VBGFUM'].reverse().map(c=>(AL.indexOf(c)+0.5)/32);
+    const fr=()=>seq.length?seq.shift():r();
+    const forced=M.issueId(M.initial(r),'z','hidamari',fr).id;
+    return {a1:a1.id,a2:a2.id,b1:b1.id,c1:c1.id,a1_new:a1.isNew,a2_new:a2.isNew,
+      can_before,can_stopped:M.canSend(off,'hidamari',id).ok,reason_stopped:M.canSend(off,'hidamari',id).reason,
+      can_restarted:M.canSend(on,'hidamari',id).ok,
+      count:{reserve:a.reserve-b.reserve,notify:a.notify-b.notify,dup:a.dup-b.dup},
+      unchanged:JSON.stringify(s)===snap&&JSON.stringify(t1)===t1snap,forced};
+  }
+  function runTest(name){
+    document.documentElement.classList.add('test');
+    let base=name;
+    if(base.endsWith('_phone')){ base=base.slice(0,-6); ui.m='phone'; render(); }
+    if(base==='t_pure') $('t-out').textContent=JSON.stringify(pureCheck());
+    else (SCN[base]||[]).forEach(tap);
+    if(name.endsWith('_phone')){ ui.m='phone'; ui.dot=null; render(); }
+    document.body.dataset.scenarioDone=base;
+  }
+
+  fresh(); render();
+  if(testMode) runTest(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
