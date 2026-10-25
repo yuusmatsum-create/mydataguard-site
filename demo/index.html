@@ -48,7 +48,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset
 @keyframes fade{from{opacity:0} to{opacity:1} }
 @keyframes just{from{background:var(--press)} to{background:transparent} }
 
-/* ヘッダー（マーク・サービス名・端末内の表示・お客さま名・前回ログイン） */
+/* ヘッダー（マーク・サービス名・端末内の表示・利用者名・前回ログイン） */
 .hd{display:flex;justify-content:space-between;align-items:center;min-height:40px}
 .brand{display:flex;align-items:center;gap:8px;font-size:var(--t4);font-weight:600;letter-spacing:.08em;color:var(--ink)}
 .brand svg{width:20px;height:20px;flex:none}
@@ -310,6 +310,31 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset
 .chips.none i{background:transparent;color:rgba(255,255,255,.45);border:1px dashed rgba(255,255,255,.4);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.35)}
 .chips em{font-style:normal;font-size:var(--t4);color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:4px;margin-left:4px}
 .chips em svg{width:14px;height:14px}
+
+/* 渡した先に聞く・止める（窓口・返事の記録・届出をした会社・ほかのサービスの記録） */
+.kv.stack div{grid-template-columns:96px 1fr;gap:8px}
+.kv.stack div span{font-size:var(--t4);line-height:1.9}
+.kv.stack div b{text-align:left;font-weight:400;color:var(--text);word-break:auto-phrase}
+.opts{margin-top:8px;border-top:1px solid var(--line)}
+.opts button{display:grid;grid-template-columns:20px 1fr;gap:12px;align-items:center;width:100%;min-height:48px;padding:12px 0;border-bottom:1px solid var(--line);font-size:var(--t3)}
+.opts .rd{width:20px;height:20px;border-radius:50%;border:1.5px solid #CFCCC4;box-sizing:border-box}
+.opts button[aria-pressed="true"] .rd{border:6px solid var(--ink)}
+.opts button[aria-pressed="true"]{font-weight:600;color:var(--ink)}
+.chk.one{grid-column:1/-1;border-bottom:0;min-height:48px;margin-top:8px}
+.path{margin-top:8px;font-size:var(--t3);color:var(--ink);line-height:1.8;word-break:auto-phrase}
+/* 送る前に確かめること：文面より先に目に入る、ひとつだけの箱（引っ越しの「済み」と同じ形） */
+.pre{margin-top:24px;padding:16px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--ink);border-radius:var(--r)}
+.pre h2{font-size:var(--t3);font-weight:600;color:var(--ink)}
+.pre .kv{border-top:0}
+.pre .kv.stack div{grid-template-columns:72px 1fr}
+.pre .kv div:last-child{border-bottom:0;padding-bottom:0}
+.pre .hint{border-top:1px solid var(--line);padding-top:8px}
+/* 文面：読み物ではなく、送る紙の見本。中で別にスクロールさせず、全文を見せる */
+.blk .sheet{margin-top:8px}
+.sheet textarea{field-sizing:content;min-height:160px}
+/* 14日たった知らせは、答えを記録する本題より小さく */
+.mv-ok.soft .big{font-size:var(--t3)}
+.mv-ok .big,.sub-cta,.todo li,.kv b,.row .meta{word-break:auto-phrase}
 </style>
 </head>
 <body>
@@ -445,7 +470,7 @@ const D=[
 const HIDDEN=6;
 
 // 企業・当局の公表から取得した、漏えいの可能性（架空）。報道だけの段階では知らせない。一覧の会社名で照合（端末の中）
-const SRC="企業の公表あり・お客さまが対象かは未確定";
+const SRC="企業の公表あり・あなたが対象かは未確定";
 const NEWS={
  "ステイ リザーブ":{date:"2026-10-09",what:"氏名・電話・メール・カード番号の一部",note:"予約システムへの不正アクセスがあったと公表されました。対象の人数と範囲は調査中です。"},
  "暮らしの通販":{date:"2026-10-06",what:"氏名・住所・電話・メール・パスワード",note:"会員情報が外部に流出したおそれがあると公表されました。会社は事実関係を調査中です。"}
@@ -461,7 +486,7 @@ const IDP=[
 ];
 const IDP_DATE="2026-04-02";
 
-// 会員カードの図に出す、お客さまの情報（架空）
+// 会員カードの図に出す、あなたの情報（架空）
 const ME={name:USER,addr:"〒123-4567 みどり市さくら町1-2-3",phone:"090-1234-5678",birth:"1994年6月14日"};
 
 // 構想：情報を渡さずに使えている会社（架空）。相手に届くのは、MyDataGuardが確かめた結果（印）だけ
@@ -485,6 +510,47 @@ const C=[
   how:["お届けには配送番号だけを使います。住所を見るのは運送会社だけです。"],
   log:["2026-09-01 申込：本人確認をMyDataGuardで確認"]}
 ];
+
+// 窓口の表（架空）：会社のサイトの「開示等の請求」の欄を、人が確かめたという想定。fee=[何を持っているか, 誰に渡したか]
+const MADO_DATE="2026-10-20";
+const MADO={
+ "ノリカ カーシェア":{how:"Webフォーム",to:"会員ページ ＞ お問い合わせ ＞ 個人情報の開示等のご請求",id:"登録メールアドレスからの申請で足ります",fee:["無料","500円（定額小為替）"],page:"個人情報の取扱いについて"},
+ "リユース マーケット":{how:"Webフォーム",to:"アプリ ＞ マイページ ＞ ヘルプ ＞ 個人情報の開示の請求",id:"アプリにログインしての申請で足ります",fee:["無料","無料"],page:"プライバシーポリシー"},
+ "マチノ レンタカー":{how:"郵送",to:"〒100-0000 みなと市うみかぜ町1-1　マチノ レンタカー 個人情報窓口",id:"本人確認書類の写し1点",fee:["1,000円（定額小為替）","1,000円（定額小為替）"],page:"個人情報保護方針"},
+ "家電量販のヒロバ":{how:"メール",to:"privacy@hiroba.example",id:"登録メールアドレスからの送信で足ります",fee:["無料","無料"],page:"個人情報保護方針"}
+};
+// デモの始まりから返事を待っている依頼（14日を過ぎた例を見せるため）
+const SEED=["マチノ レンタカー","del","2026-09-24"];
+
+// 個人情報保護委員会に、他社に提供する届出をした会社（架空の3社）。q：候補に入れる質問
+const OPT_DATE="2026-10-20";
+const OPT=[
+ {n:"ミチシルベ地図",q:"q3",why:"表札の名前を、住宅地図に載せる会社です",what:"住宅地図の作成と販売",get:"表札・郵便受けの確認（現地の調査）",items:"居住者の氏名・住所（建物の名前と部屋番号を含む）",to:"地図を買った会社・個人",how:"Webフォーム・郵送",dest:"会社のサイト ＞ 個人情報について ＞ 第三者提供の停止のお申し出",filed:"2023-04-01"},
+ {n:"トウキ情報サービス",q:"q1",why:"土地や建物の持ち主の氏名・住所を扱う会社です",what:"不動産の登記の情報をまとめた資料の販売",get:"登記簿の閲覧",items:"所有者の氏名・住所、物件の所在地",to:"不動産会社・調査会社",how:"郵送",dest:"〒100-0001 みなと市しおさい町2-2　トウキ情報サービス 第三者提供停止係",filed:"2022-09-15"},
+ {n:"ヒトナミ企業データ",q:"q2",why:"会社の役員や自営業の方の情報を扱う会社です",what:"企業の信用調査と、企業の情報の提供",get:"登記簿の閲覧、公開された資料",items:"役員の氏名・生年月日・経歴・自宅の住所",to:"取引の前に相手を調べたい会社",how:"メール・郵送",dest:"teishi@hitonami.example",filed:"2024-02-01"}
+];
+const OPTQ=[
+ ["q1","家や土地を、ご自身の名義で持っていますか","登記の情報を扱う会社が、持ち主の氏名と住所を他社に提供していることがあります。"],
+ ["q2","会社の役員、または自営業ですか（過去を含む）","企業の信用調査の会社が、役員の情報を他社に提供していることがあります。"],
+ ["q3","表札や郵便受けに、名前を出していますか","住宅地図の会社が、表札の名前を地図に載せていることがあります。"],
+ ["q4","心当たりの差出人（DM・勧誘の電話）の名前が分かりますか","分かるときだけ入力してください。届出をした会社の名前と照らし合わせます。"]
+];
+
+// ほかのサービスの記録（架空の4社）。画面への辿り方を文字で示す。リンクは置かない
+const EXT=[
+ {n:"ツナガル",c:"写真・交流のSNS",know:"広告の設定に、あなたの情報を使った広告主の名前が出ることがあります。",
+  steps:["プロフィール ＞ メニュー ＞ 設定","アカウントの管理 ＞ あなたの情報 ＞ 情報を書き出す","形式は「JSON」、写真と動画は「含めない」を選ぶ","用意ができると知らせが届きます。4日以内にダウンロードしてください"],
+  ad:"設定 ＞ 広告 ＞ 広告の設定 ＞ あなたの情報を使った広告主",ready:true},
+ {n:"サガス",c:"検索・メールのサービス",know:"このサービスの中での、あなたの行動が分かります。他社の名前はほとんど出ません。",
+  steps:["アカウントの管理 ＞ データとプライバシー","データの書き出し ＞ 書き出すものを選ぶ","形式は「JSON」、ファイルは「zip」を選ぶ","届くまで数分から数日。届いたリンクは約7日で使えなくなります"],
+  ad:"アカウントの管理 ＞ 広告の設定 ＞ 広告に使う情報",ready:true},
+ {n:"ハナシテ",c:"メッセージアプリ",know:"この会社自身が持つ、あなたの情報が分かります。",
+  steps:["設定 ＞ プライバシー ＞ あなたの情報の管理","個人情報の開示の手続き ＞ 開示を申し込む","本人確認のあと、開示を受け取る"],
+  ad:"設定 ＞ プライバシー ＞ 広告の表示の設定",ready:false},
+ {n:"カウモール",c:"通販のサービス",know:"この会社自身が持つ、あなたの情報が分かります。",
+  steps:["アカウントサービス ＞ アカウント設定","データのリクエスト ＞ 自分のデータを依頼する","用意ができると知らせが届きます"],
+  ad:"アカウントサービス ＞ 広告の設定",ready:false}
+];
 /* ===== データここまで ===== */
 
 const KEY=["身分証","運転免許証","マイナンバー","顔写真","旅券"];
@@ -505,7 +571,10 @@ const md=s=>{const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?`${+m[2]}月$
 const fmt=x=>x.toLocaleString("ja-JP");
 const RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
 // fix：ご自身で直した項目／edit：直している途中の内容／mv：引っ越し・改姓の「済み」／idMv：MyDataGuard側の変更（構想）／sel：まとめて依頼する会社
-const S0=()=>{const mv={"住所":{},"氏名":{} };return {tab:"list",view:"past",filter:"すべて",req:{},stopped:{},just:null,landed:false,linked:false,watch:true,fix:{},edit:null,mv,mvKind:"住所",idMv:{},sel:null};};
+// req のキー：一覧の会社は番号、届出をした会社は "o"＋番号。値は {kind, date, prev?(前回送った日), ans?{kind,date,memo} }
+// opt：届出をした会社の4問の答え（画面の中で使うだけ。保存しない）
+const SEED_I=D.findIndex(d=>d[0]===SEED[0]);
+const S0=()=>{const mv={"住所":{},"氏名":{} };return {tab:"list",view:"past",filter:"すべて",req:{[SEED_I]:{kind:SEED[1],date:SEED[2]} },stopped:{},opt:{a:{},name:"",del:false},ansTmp:null,just:null,landed:false,linked:false,watch:true,fix:{},edit:null,mv,mvKind:"住所",idMv:{},sel:null};};
 let S=S0();
 const $=id=>document.getElementById(id);
 const ESC_MAP={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"};
@@ -513,8 +582,16 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>ESC_MAP[c]);
 const active=()=>C.filter((c,j)=>!S.stopped[j]).length;
 const N=(v,u)=>`<span class="num">${v}</span><span class="unit">${u}</span>`;
 const SURE={1:"メールに証拠あり",2:"推定",3:"ご自身で追加"};
-const REQ_TITLE={ask:"何を持っているか聞く",check:"対象かどうか問い合わせる"};
-const REQ_KIND={ask:"何を持っているかの問い合わせ",check:"漏えいの対象かどうかの問い合わせ"};
+const REQ_TITLE={ask:"何を持っているかを聞く",rec:"誰に渡したかを聞く",check:"対象かどうか問い合わせる",later:"期間が過ぎたら消してもらう"};
+const REQ_KIND={ask:"何を持っているかの問い合わせ",rec:"誰に渡したかの問い合わせ",check:"漏えいの対象かどうかの問い合わせ",optout:"止めるよう求めた"};
+// 返事の種類（本人が選ぶ）。[キー, 選ぶときの言葉, 任意の書き留めの見出し]
+const ANS=[["open","開示された",""],["nohave","持っていないと回答",""],["stopped","止めた・消したと回答","反映の時期（会社の答えにあれば）"],
+ ["law","法令で保存と回答","保存の期限"],["docs","書類・手数料を求められた","求められた書類の種類・手数料"],["refused","断られた","理由（会社の答えにあれば）"],["noreply","返事なし（14日）",""]];
+const ansLabel=a=>a.kind==="noreply"?"返事なし":`会社の回答：${ANS.find(x=>x[0]===a.kind)[1]}`;
+const days=s=>Math.round((Date.parse(TODAY)-Date.parse(s))/864e5);
+const AGAIN_D=14;
+// 依頼の相手：一覧の会社か、届出をした会社か
+const reqName=k=>String(k)[0]==="o"?OPT[+String(k).slice(1)].n:D[k][0];
 
 const ICON={
  chev:'<svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5"/></svg>',
@@ -566,7 +643,7 @@ function status(d,i){
 }
 const answers=c=>c.checks.filter(g=>g[1]!==VIA).map(g=>`${g[0]} ✓`).join("　");
 
-/* ---------- 会員カードの図：「この会社からは、お客さまがこう見えています」
+/* ---------- 会員カードの図：「この会社からは、あなたがこう見えています」
    どの画面でも同じ枠・同じ5項目の並び。埋まっている（情報を渡した）／空いている（渡していない）の差で見せる ---------- */
 const PF=[["氏名",t=>t.includes("氏名"),()=>ME.name],["住所",t=>t.includes("住所"),()=>ME.addr],["電話番号",t=>t.includes("電話")||t.includes("連絡先"),()=>ME.phone],["生年月日",t=>t.includes("生年月日"),()=>ME.birth],["身分証の写し",t=>KEY.some(k=>t.includes(k)),t=>KEY.filter(k=>t.includes(k)).join("・")]];
 const CHECK='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
@@ -618,7 +695,7 @@ function KS(){
   ${head()}
   <div class="intro">
     <div class="k">はじめに</div>
-    <h1>お使いのメールから、お客さまの情報を渡してきた会社を探します</h1>
+    <h1>お使いのメールから、あなたの情報を渡してきた会社を探します</h1>
   </div>
   <ul class="steps">
     <li>${ICON.eye}<div><b>読むのは、件名・差出人・日付だけです</b><span>「会員登録」「本人確認」「退会」「漏えい」などの手がかりを探します。本文は読みません。</span></div></li>
@@ -638,7 +715,7 @@ function KS(){
 }
 
 function watchOpt(){
-  return `<div class="opt"><div><b>漏えい情報の見守り</b><p>企業・当局の公表と照らし合わせます。照らし合わせはこの端末の中で行い、お客さまの一覧は外に送りません。</p></div>
+  return `<div class="opt"><div><b>漏えい情報の見守り</b><p>企業・当局の公表と照らし合わせます。照らし合わせはこの端末の中で行い、会社の一覧は外に送りません。</p></div>
   <button class="sw" id="sw" role="switch" aria-checked="${S.watch}" aria-label="漏えい情報の見守り"></button></div>`;
 }
 function bindWatch(again){$("sw").onclick=()=>{S.watch=!S.watch;const y=$("screen").scrollTop;again();$("screen").scrollTop=y;};}
@@ -687,7 +764,7 @@ function K0(){
   render(`
   ${head()}
   <div class="who"><b>${USER} 様</b><span>前回ログイン ${LAST_LOGIN}</span></div>
-  <section class="card" aria-label="お客さまの情報の在りか">
+  <section class="card" aria-label="あなたの情報の在りか">
     <button class="cb" id="toPast">
       <span class="k">個人情報を渡している会社</span>
       <span class="n"><b>${total}<span class="unit">社</span></b><small>${landed?`メール${fmt(MAILS)}通から`:`${ymd(TODAY)}現在`}</small>${ICON.chev}</span>
@@ -710,9 +787,13 @@ function K0(){
   </section>
 
   <section><h2 class="sec">お手続き</h2>
-    <div class="list"><button class="row tight" id="move"><span class="nm">引っ越し・姓が変わったとき</span><span class="cnt"></span>${ICON.chev}</button></div>
+    <div class="list"><button class="row tight" id="move"><span class="nm">引っ越し・姓が変わったとき</span><span class="cnt"></span>${ICON.chev}</button>
+    <button class="row tight" id="opt"><span class="nm">他社に提供する届出をした会社に、止めてもらう</span><span class="cnt"></span>${ICON.chev}</button>
+    <button class="row tight" id="ext"><span class="nm">ほかのサービスの記録で確かめる</span><span class="cnt"></span>${ICON.chev}</button></div>
   </section>`,{still:landed});
   $("move").onclick=()=>KMove();
+  $("opt").onclick=()=>KOpt();
+  $("ext").onclick=()=>KExt();
   if(landed) toast(`メールから${total}社が見つかりました`,true);
   document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{S.kdFrom="home";KD(+b.dataset.i);});
   document.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;S.q="";S.sel=null;KL2();});
@@ -751,7 +832,7 @@ function drawList(){
   $("lst").innerHTML=`${legend}
   ${idle?`<p class="hint">最後の記録から${IDLE_Y}年以上たっている会社です。使っていない会社には、情報を消してもらう依頼を出せます。</p>
   <div class="cta" style="margin-top:16px"><button class="primary" id="batch" ${nSel?"":"disabled"}>消してもらう依頼文をまとめて作る（${nSel}社）</button>
-  <p class="sub-cta">1社ずつ文面をお見せします。送るのはお客さまご自身です。</p></div>`:""}
+  <p class="sub-cta">1社ずつ文面をお見せします。送るのはあなたです。</p></div>`:""}
   <div class="list">${rows.map(([d,i])=>idle?
     `<div class="row selrow"><label class="sel"><input type="checkbox" data-s="${i}" ${S.sel[i]?"checked":""} ${S.req[i]?"disabled":""}><span class="nm">${esc(d[0])}<span class="meta">最後の記録 ${lastYear(d)}年${isGone(d)?"・退会済み":""}</span></span></label>${status(d,i)}<button class="go" data-i="${i}" aria-label="${esc(d[0])}の詳細">${ICON.chev}</button></div>`
     :`<button class="row" data-i="${i}"><span class="nm">${esc(d[0])}</span>${status(d,i)}${ICON.chev}</button>`).join("")||`<p class="empty" style="margin-top:32px">見つかりませんでした。</p>`}</div>
@@ -806,7 +887,7 @@ function KMove(back){
   <section class="mv-ok">
     <div class="k">本人確認だけの会社（構想）　<span class="num">${live.length}</span>社</div>
     <p class="big">変更は要りません</p>
-    <p class="hint">MyDataGuardの${fld}を1回直せば届く仕組みを準備しています。これらの会社は、お客さまの${fld}を持っていません。</p>
+    <p class="hint">MyDataGuardの${fld}を1回直せば届く仕組みを準備しています。これらの会社は、あなたの${fld}を持っていません。</p>
     <p class="names">${live.map(c=>esc(c.n)).join("・")}</p>
     <div class="cta" style="margin-top:16px">${idDone
       ?`<p class="donemsg">${CHECK}MyDataGuardの${fld}を変更しました（${md(TODAY)}・デモ）</p>`
@@ -899,7 +980,7 @@ function KD(i){
   if(isGone(d)) st.push('<span>退会済み</span>');
   if(isLaw(d)) st.push('<span>法律で保存</span>');
   if(S.req[i]) st.push('<span class="on">依頼中</span>');
-  // 重なり：公表された「漏れた可能性があるもの」と、お客さまが渡したと思われるもの
+  // 重なり：公表された「漏れた可能性があるもの」と、あなたが渡したと思われるもの
   const mine=d[3].split("・");
   const hit=x=>mb&&nw.what.split("・").some(w=>w.includes(x.replace(/（.*）/,""))||x.includes(w));
   const todo=mb?[
@@ -919,13 +1000,13 @@ function KD(i){
   <button class="back" id="bk">${ICON.back}${fromList?"一覧":"ホーム"}</button>
   <div class="dh"><div class="k">個人情報を渡している会社・${esc(d[1])}</div><h1>${esc(d[0])}</h1><div class="stline">${st.join("")}</div></div>
   ${pcard({mode:"past",items:d[3],fields:fl,edit:editing,hit:mb?hit:null,hitL:mb?(l=>hitLabel(nw,l)):null,warn:(isLeak(d)||mb)&&!editing,who:d[0],tag:tag,
-    cap:editing?"渡した項目を、ご自身で直してください":"この会社からは、お客さまがこう見えています",foot:foot})}
+    cap:editing?"渡した項目を、ご自身で直してください":"この会社からは、あなたがこう見えています",foot:foot})}
   ${editing?`<div class="cta" style="margin-top:16px">
     <button class="primary" id="save">この内容で保存する</button>
     <button class="textbtn" id="cancel">やめておく</button>
     <p class="sub-cta">直した内容は、この端末の中だけに置きます。</p>
   </div>`:`<button class="textbtn fixbtn" id="fix">渡した項目を直す</button>
-  <p class="hint">${manual?"ご自身で追加した会社です。":nMine?"「ご自身で確認」の付いた欄は、お客さまが直した内容です。ほかの欄は推定です。":"業種とメールの件名からの推定です。合っていなければ、上の「渡した項目を直す」で直せます。"}今も持っているかは分かりません。退会後も残っていることがあります。</p>`}
+  <p class="hint">${manual?"ご自身で追加した会社です。":nMine?"「ご自身で確認」の付いた欄は、あなたが直した内容です。ほかの欄は推定です。":"業種とメールの件名からの推定です。合っていなければ、上の「渡した項目を直す」で直せます。"}今も持っているかは分かりません。退会後も残っていることがあります。</p>`}
   ${isLaw(d)?`<p class="hint">この会社は法律により、取引が終わった後も一定の期間、記録を保存する義務があります。期間が過ぎたら消去するよう依頼できます。</p>`:""}
   <div class="span2"><div><span>いつから</span><b>${N(firstYear(d),"年")}</b></div><div><span>最後の記録</span><b>${N(lastYear(d),"年")}</b></div></div>
   ${mb?`<section class="blk"><h2>企業の公表</h2>
@@ -934,7 +1015,7 @@ function KD(i){
       <div><span>情報源</span><b>${SRC}</b></div>
       <div><span>漏れた可能性があるもの</span><b>${esc(nw.what)}</b></div>
     </div>
-    <p class="hint">${nw.note}お客さまが対象かどうかは、まだ分かりません。会社からのお知らせも届いていません。</p>
+    <p class="hint">${nw.note}あなたが対象かどうかは、まだ分かりません。会社からのお知らせも届いていません。</p>
   </section>`:""}
   ${isLeak(d)?`<section class="blk"><h2>漏えいの知らせ</h2>
     <div class="kv">
@@ -946,19 +1027,20 @@ function KD(i){
     <ol class="todo">${todo.map(t=>`<li><span>${t[0]}<small>${t[1]}</small></span></li>`).join("")}</ol>
   </section>`:""}
   <section class="blk"><h2>記録</h2>
-    <ul class="tl">${(mb?[`?${nw.date} 企業の公表：漏えいの可能性（お客さまが対象かは未確定）`]:[]).concat(d[2].split("|").reverse()).map(t=>{const cls=t[0]==="!"?"hot":t[0]==="?"?"maybe":"";t=t.replace(/^[!?]/,"");const m=t.match(/^([\d\-〜]+|毎週)\s*(.*)$/);return `<li class="${cls}"><span class="dt">${m?m[1]:""}</span><span class="tx">${esc(m?m[2]:t)}</span></li>`;}).join("")}</ul>
-    <p class="hint">${manual?"ご自身で追加した記録です。":mb?"企業の公表と、お客さまのメールの件名から作った記録です。":"お客さまのメールの件名から作った記録です。"}</p>
+    <ul class="tl">${reqLines(i).concat(mb?[`?${nw.date} 企業の公表：漏えいの可能性（あなたが対象かは未確定）`]:[]).concat(d[2].split("|").reverse()).map(t=>{const cls=t[0]==="!"?"hot":t[0]==="?"?"maybe":"";t=t.replace(/^[!?]/,"");const m=t.match(/^([\d\-〜]+|毎週)\s*(.*)$/);return `<li class="${cls}"><span class="dt">${m?m[1]:""}</span><span class="tx">${esc(m?m[2]:t)}</span></li>`;}).join("")}</ul>
+    <p class="hint">${manual?"ご自身で追加した記録です。":mb?"企業の公表と、あなたのメールの件名から作った記録です。":"あなたのメールの件名から作った記録です。"}</p>
   </section>
+  ${editing?"":madoBlock(d)}
   ${editing?"":`<div class="cta">
     ${mb?`<button class="primary" id="chk">対象かどうか会社に問い合わせる</button>
     <button class="secondary" id="del">止める・消してもらう</button>`
     :`<button class="primary" id="del">${isLaw(d)?"期間が過ぎたら消してもらう":"止める・消してもらう"}</button>
-    <button class="secondary" id="ask">何を持っているか聞く</button>`}
-    <p class="sub-cta">依頼文の下書きをお作りします。送るのはお客さまご自身です。</p>
+    <button class="secondary" id="ask">聞く（何を持っているか・誰に渡したか）</button>`}
+    <p class="sub-cta">依頼文の下書きを作ります。送るのはあなたです。</p>
   </div>`}`);
   $("bk").onclick=()=>{S.edit=null;(fromList?KL2:K0)();};
   if(!editing){$("del").onclick=()=>KR(i,isLaw(d)?"later":"del");
-    if(mb) $("chk").onclick=()=>KR(i,"check"); else $("ask").onclick=()=>KR(i,"ask");}
+    if(mb) $("chk").onclick=()=>KR(i,"check"); else $("ask").onclick=()=>KAsk(i);}
   // 直す
   const keep=fn=>{const y=$("screen").scrollTop;fn();$("screen").scrollTop=y;};
   if(editing){
@@ -968,28 +1050,293 @@ function KD(i){
   } else $("fix").onclick=()=>{S.edit={i:i,tmp:{} };keep(()=>KD(i));};
 }
 
+// 文面は、本人の名前で送る前提で、決まった形に差し込むだけ（デモの名前とメールは架空）
 function letter(d,kind){
-  let s=`${d[0]}\n個人情報のお問い合わせ窓口　ご担当者様\n\n私は貴社の${d[1]}のサービスを利用している（または利用していた）者です。\n登録メールアドレス：（ご自身のメールアドレス）\n\n個人情報保護法第33条に基づき、貴社が保有する私の保有個人データの項目、取得日、利用目的、第三者への提供の有無を開示してください。\n`;
+  const ask33=kind==="rec"
+    ?`個人情報保護法第33条第5項に基づき、貴社が私の個人データを第三者に提供した記録と、第三者から受け取った記録（相手の名称、日付、項目）を開示してください。\n`
+    :`個人情報保護法第33条第1項に基づき、貴社が保有する私の保有個人データの項目、取得日、利用目的、第三者への提供の有無を開示してください。\n`;
+  let s=`${d[0]}\n個人情報のお問い合わせ窓口　ご担当者様\n\n私は貴社の${d[1]}のサービスを利用している（または利用していた）者です。\n氏名：${USER}\n登録メールアドレス：${MAIL}\n\n${ask33}`;
   if(kind==="check") s+=`\nあわせて、貴社が${ymd(NEWS[d[0]].date)}に公表された個人情報の漏えいについて、私の個人データが対象に含まれるかどうか、含まれる場合はその項目をお知らせください。\n`;
   if(kind==="del") s+= isLeak(d)?`\nあわせて、貴社で個人データの漏えいが発生したことを受け、同法第35条に基づき、私の保有個人データの利用の停止と消去をお願いします。\n`:`\nあわせて、貴社が私の保有個人データを利用する必要がなくなっている場合は、同法第35条に基づき、利用の停止と消去をお願いします。\n`;
   if(kind==="del"||kind==="later") s+=`法令により保存が必要な記録は、その項目と保存期間を教えてください。保存期間が過ぎたら消去してください。\n`;
-  return s+`\n結果は、このメールへの返信でお知らせください。\n\n（氏名）`;
+  return s+`\n結果は、このメールへの返信でお知らせください。\n\n${USER}`;
+}
+// 14日たっても返事がないときの、もう一度お願いする文面（前回の文面をそのまま添える）
+function againLetter(k){
+  const r=S.req[k], first=letterOf(k,r.kind);
+  return `${reqName(k)}\nご担当者様\n\n${md(r.date)}にお送りした${REQ_KIND[r.kind]||"止める・消してもらう依頼"}について、14日たちましたが、まだお返事をいただいていません。お手数ですが、あらためてご対応をお願いします。\n受付の状況だけでも、お知らせいただけると助かります。\n\n――　${md(r.date)}にお送りした内容　――\n${first}`;
+}
+const letterOf=(k,kind)=>String(k)[0]==="o"?optLetter(OPT[+String(k).slice(1)]):letter(D[k],kind);
+
+/* ---------- 窓口（会社の詳細の中）。窓口の表にある会社は宛先・本人確認・手数料・確認日を、無い会社は探し方を出す ---------- */
+function madoBlock(d){
+  const m=MADO[d[0]];
+  if(!m) return `<section class="blk" id="mado"><h2>個人情報の窓口</h2>
+    <p class="hint">窓口は、この会社のプライバシーポリシーの「開示等の請求」の欄にあります。</p>
+    <ol class="todo"><li><span>会社のサイトの一番下にある「プライバシーポリシー」を開く</span></li><li><span>「開示等の請求」または「保有個人データ」の欄を探す</span></li><li><span>受付の方法（フォーム・メール・郵送）と、本人確認・手数料を確かめる</span></li></ol>
+    <p class="hint">宛先・本人確認・手数料・確認日の欄は、窓口を確かめた会社にだけ出ます。</p></section>`;
+  return `<section class="blk" id="mado"><h2>個人情報の窓口</h2>
+    <div class="kv stack">
+      <div><span>受付の方法</span><b>${m.how}</b></div>
+      <div><span>宛先</span><b>${esc(m.to)}</b></div>
+      <div><span>本人確認</span><b>${m.id}</b></div>
+      <div><span>手数料</span><b>何を持っているか：${m.fee[0]}<br>誰に渡したか：${m.fee[1]}</b></div>
+      <div><span>確認日</span><b class="num">${ymd(MADO_DATE)}</b></div>
+    </div>
+    <p class="hint">窓口の情報は${ymd(MADO_DATE)}に会社のサイト（${m.page}）で確かめたものです（デモでは架空）。送る前に、会社のサイトでもご確認ください。</p></section>`;
+}
+// 「送る前に」の3行：[見出し, 中身]
+function beforeRows(d,kind){
+  const m=MADO[d[0]], open=kind==="ask"||kind==="rec";
+  const fee=open?(m?m.fee[kind==="rec"?1:0]:"開示は手数料がかかることがあります"):kind==="check"?"会社が決めます":"止める・消すのに手数料はかかりません";
+  if(!m) return [["宛先","会社のサイトの「開示等の請求」の欄"],["本人確認","会社が決めます"],["手数料",fee]];
+  return [["宛先",`${m.how}：${m.to}`],["本人確認",m.id],["手数料",fee]];
+}
+// 依頼文の画面（一覧の会社・届出をした会社で共通）
+function letterScreen(o){
+  render(`
+  <button class="back" id="bk">${ICON.back}${esc(o.back)}</button>
+  <div class="dh"><div class="k">${o.k||"依頼文の下書き"}</div><h1>${o.title}</h1></div>
+  ${o.lead?`<p class="lead">${o.lead}</p>`:""}
+  <section class="pre" id="before"><h2>送る前に確かめること</h2>
+    <div class="kv stack">${o.pre.map(r=>`<div><span>${r[0]}</span><b>${esc(r[1])}</b></div>`).join("")}</div>
+    ${o.preNote?`<p class="hint">${o.preNote}</p>`:""}
+  </section>
+  ${o.extra||""}
+  <section class="blk"><h2>文面</h2>
+    <p class="hint">送るのはあなたです。文面をコピーして、上の宛先に、あなたの名前で送ってください。</p>
+    <div class="sheet"><textarea id="tx" aria-label="依頼文">${esc(o.text)}</textarea></div>
+  </section>
+  <div class="cta" style="margin-top:24px">
+    <button class="secondary" id="cp">文面をコピー</button>
+    <button class="primary" id="sent">送ったので記録する</button>
+    <p class="sub-cta">MyDataGuardから会社に送ることはありません。<br>返事が来たら「依頼」で記録できます。</p>
+  </div>`);
+  $("bk").onclick=o.onBack;
+  $("cp").onclick=()=>copyText();
+  $("sent").onclick=o.onSent;
 }
 function KR(i,kind){
   const d=D[i];
+  const again=kind==="again";
+  letterScreen({back:again?"返事を記録する":d[0],k:again?"もう一度お願いする文面":"依頼文の下書き",
+    title:again?"前回のお願いから14日たちました":(REQ_TITLE[kind]||"止める・消してもらう"),
+    lead:kind==="rec"?"誰に渡したか・どこから得たかは、記録があれば教えてもらえます。出てこないこともあります。":"",
+    pre:beforeRows(d,again?S.req[i].kind:kind),
+    text:again?againLetter(i):letter(d,kind),
+    onBack:()=>again?KAns(i):KD(i),
+    // 記録したら一覧へ戻し、該当の行（「依頼中」に変わる）を光らせる
+    onSent:()=>{
+      if(again){const r=S.req[i];S.req[i]={kind:r.kind,date:TODAY,prev:r.date};toast("もう一度お願いしたことを記録しました");KQ(i);return;}
+      S.req[i]={kind:kind,date:TODAY};S.filter="すべて";S.q="";S.just=`#lst [data-i="${i}"]`;toast("記録しました。返事をお待ちください");KL2();}
+  });
+}
+
+/* ---------- 聞く：何を持っているか／誰に渡したか ---------- */
+function KAsk(i){
+  const d=D[i], m=MADO[d[0]];
+  const fee=j=>m?`手数料 ${m.fee[j]}・本人確認 ${m.id}`:"手数料・本人確認は会社が決めます";
   render(`
   <button class="back" id="bk">${ICON.back}${esc(d[0])}</button>
-  <div class="dh"><div class="k">依頼文の下書き</div><h1>${REQ_TITLE[kind]||"止める・消してもらう"}</h1></div>
-  <div class="sheet"><textarea id="tx" aria-label="依頼文">${esc(letter(d,kind))}</textarea></div>
-  <div class="cta">
-    <button class="primary" id="sent">送ったので記録する</button>
-    <button class="secondary" id="cp">文面をコピー</button>
-    <p class="sub-cta">送り先は、各社のサイトにある個人情報のお問い合わせ窓口です。<br>MyDataGuardが代わりに送ることはありません。</p>
-  </div>`);
+  <div class="dh"><div class="k">聞く</div><h1>何を聞きますか</h1></div>
+  <button class="src" data-k="ask"><span><span class="k">個人情報保護法 第33条第1項</span><span class="nm">何を持っているかを聞く</span><span class="meta">${esc(fee(0))}</span></span>${ICON.chev}</button>
+  <button class="src" data-k="rec" style="margin-top:8px"><span><span class="k">個人情報保護法 第33条第5項</span><span class="nm">誰に渡したかを聞く</span><span class="meta">どこから得たかも、あわせて聞けます。${esc(fee(1))}</span></span>${ICON.chev}</button>
+  <p class="hint" style="margin-top:16px">誰に渡したかは、記録があれば教えてもらえます。出てこないこともあります。</p>`);
   $("bk").onclick=()=>KD(i);
-  $("cp").onclick=()=>copyText();
-  // 記録したら一覧へ戻し、該当の行（「依頼中」に変わる）を光らせる
-  $("sent").onclick=()=>{S.req[i]={kind:kind,date:TODAY};S.filter="すべて";S.q="";S.just=`#lst [data-i="${i}"]`;toast("記録しました。返事をお待ちください");KL2();};
+  document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>KR(i,b.dataset.k));
+}
+
+/* ---------- 返事を記録する（7種類）。14日たって返事がなければ、もう一度お願いする文面へ ---------- */
+function KAns(k){
+  S.tab="req";
+  const r=S.req[k], dd=days(r.date), sel=S.ansTmp&&S.ansTmp.k===String(k)?S.ansTmp:null;
+  const late=dd>=AGAIN_D&&!r.ans;
+  const pick=sel&&ANS.find(a=>a[0]===sel.kind);
+  render(`
+  <button class="back" id="bk">${ICON.back}依頼</button>
+  <div class="dh"><div class="k">返事を記録する</div><h1>${esc(reqName(k))}</h1>
+    <div class="stline"><span>${REQ_KIND[r.kind]||"止める・消してもらう依頼"}</span>${r.ans?`<span class="on">${esc(ansLabel(r.ans))}</span>`:""}</div></div>
+  <div class="span2"><div><span>送った日</span><b class="num">${ymd(r.date)}</b></div><div><span>送ってから</span><b class="num">${dd}日</b></div></div>
+  ${late?`<section class="mv-ok soft"><p class="big">前回のお願いから14日たちました</p>
+    <p class="hint">返事がまだ無いときは、前回の文面を添えて、もう一度お願いできます。</p>
+    <div class="cta" style="margin-top:16px"><button class="secondary" id="again">もう一度お願いする文面を作る</button></div></section>`:""}
+  <section class="blk"><h2>会社の答え</h2>
+    <div class="opts" id="ans-kinds" role="radiogroup" aria-label="会社の答え">${ANS.map(a=>`<button role="radio" data-a="${a[0]}" aria-pressed="${!!sel&&sel.kind===a[0]}" aria-checked="${!!sel&&sel.kind===a[0]}"><span class="rd"></span><span>${a[1]}</span></button>`).join("")}</div>
+    ${pick&&pick[2]?`<input class="search" id="memo" style="margin-top:16px" placeholder="${pick[2]}" aria-label="${pick[2]}" value="${esc(sel.memo||"")}">`:""}
+    ${pick&&pick[0]==="refused"?`<p class="hint">個人情報保護委員会の相談の窓口や、お住まいの地域の消費生活センターに相談できます。</p>`:""}
+    <p class="hint">${pick&&pick[0]==="stopped"?"会社の答えを記録します。止まったことの確認はできません。そのあとも同じ会社から連絡が届いたら、記録した日付と見比べられます。":"会社の答えを記録します。止まったことの確認はできません。"}返事の中身は、この端末の中だけに置きます。</p>
+  </section>
+  <div class="cta">
+    <button class="primary" id="rec" ${sel?"":"disabled"}>記録する</button>
+  </div>`);
+  const keep=fn=>{const y=$("screen").scrollTop;fn();$("screen").scrollTop=y;};
+  $("bk").onclick=()=>{S.ansTmp=null;KQ();};
+  if($("again")) $("again").onclick=()=>KRagain(k);
+  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{S.ansTmp={k:String(k),kind:b.dataset.a,memo:""};keep(()=>KAns(k));});
+  if($("memo")) $("memo").oninput=e=>{S.ansTmp.memo=e.target.value;};
+  $("rec").onclick=()=>{if(!sel)return;r.ans={kind:sel.kind,date:TODAY,memo:sel.memo||""};S.ansTmp=null;toast("記録しました");KQ(k);};
+}
+// もう一度お願いする文面：一覧の会社は KR、届出をした会社は止めてもらう文面の画面へ
+function KRagain(k){
+  if(String(k)[0]==="o"){
+    const o=+String(k).slice(1), c=OPT[o], r=S.req[k];
+    letterScreen({back:"返事を記録する",k:"もう一度お願いする文面",title:"前回のお願いから14日たちました",pre:optPre(c),text:againLetter(k),
+      onBack:()=>KAns(k),onSent:()=>{S.req[k]={kind:r.kind,date:TODAY,prev:r.date};toast("もう一度お願いしたことを記録しました");KQ(k);} });
+  } else KR(+k,"again");
+}
+// 会社の詳細の「記録」に出す、依頼と返事の行（新しい順）
+function reqLines(i){
+  const r=S.req[i];
+  if(!r) return [];
+  const out=[];
+  if(r.ans) out.push(`${r.ans.date} ${ansLabel(r.ans)}（会社の回答）${r.ans.memo?`・${r.ans.memo}`:""}`.replace("返事なし（会社の回答）","返事なし"));
+  out.push(`${r.date} ${r.prev?"もう一度お願いした：":"依頼を送った："}${REQ_KIND[r.kind]||"止める・消してもらう依頼"}`);
+  return out;
+}
+
+/* ---------- 他社に提供する届出をした会社に、止めてもらう：はじめに → 4問 → 候補 → 届出の要約 → 文面 → 記録 ---------- */
+function KOpt(){
+  S.tab="list";
+  render(`
+  <button class="back" id="bk">${ICON.back}ホーム</button>
+  <div class="dh"><div class="k">お手続き</div><h1>他社に提供する届出をした会社に、止めてもらう</h1></div>
+  <p class="lead">個人情報保護委員会に、本人の同意なしで他社に提供する届出をしている会社です。</p>
+  <ol class="pl">
+    <li><span><b>できること</b><p>届出をした会社には、無料で、提供を止めるよう求められます。</p></span></li>
+    <li><span><b>できないこと</b><p>届出をしていない会社や、すでに渡った先の分は、止められません。</p></span></li>
+    <li><span><b>止まったことの確認はできません</b><p>会社の答えを記録します。</p></span></li>
+  </ol>
+  <div class="cta">
+    <button class="primary" id="start">質問に答える（4問）</button>
+    <p class="sub-cta">答えはこの端末の中で使うだけで、保存も送信もしません。<br>デモの会社名と届出の内容は架空です。</p>
+  </div>`);
+  $("bk").onclick=K0;
+  $("start").onclick=()=>{S.opt={a:{},name:"",del:false};KOptQ(0);};
+}
+function KOptQ(n){
+  const [q,title,why]=OPTQ[n];
+  const next=()=>n+1<OPTQ.length?KOptQ(n+1):KOptList();
+  render(`
+  <button class="back" id="bk">${ICON.back}${n?"前の質問":"はじめに"}</button>
+  <div class="dh"><div class="k">質問・<span class="num">${n+1}</span> / <span class="num">${OPTQ.length}</span></div><h1>${title}</h1></div>
+  <div class="bar" style="margin-top:16px"><i style="width:${(n/OPTQ.length)*100}%"></i></div>
+  <p class="hint" style="margin-top:16px">${why}</p>
+  ${q==="q4"?`<input class="search" id="q4" placeholder="例：DMの差出人の名前" value="${esc(S.opt.name)}" aria-label="差出人の名前">
+  <div class="cta"><button class="primary" id="q4go">この名前でも探す</button><button class="textbtn" id="skip">飛ばす</button></div>`
+  :`<div class="cta">${[["yes","はい"],["no","いいえ"],["unk","分からない"]].map(([v,t])=>`<button class="secondary" data-a="${v}">${t}</button>`).join("")}</div>`}
+  <p class="sub-cta">答えはこの端末の中で使うだけで、保存も送信もしません。</p>`);
+  $("bk").onclick=()=>n?KOptQ(n-1):KOpt();
+  document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{S.opt.a[q]=b.dataset.a;next();});
+  if($("q4go")){$("q4go").onclick=()=>{S.opt.name=$("q4").value.trim();next();};$("skip").onclick=()=>{S.opt.name="";next();};}
+}
+// 候補：質問に「はい」と答えた種類の会社と、入力した差出人の名前に合う会社だけ（多くて5社）
+function optCands(){
+  const nm=S.opt.name;
+  return OPT.map((c,o)=>{
+    const byName=nm.length>=2&&(c.n.includes(nm)||nm.includes(c.n));
+    const why=byName?"入力した差出人の名前と合う会社です":S.opt.a[c.q]==="yes"?c.why:"";
+    return why?{c:c,o:o,why:why}:null;}).filter(Boolean).slice(0,5);
+}
+function KOptList(){
+  S.tab="list";
+  const cs=optCands();
+  render(`
+  <button class="back" id="bk">${ICON.back}ホーム</button>
+  <div class="dh"><div class="k">届出をした会社に止めてもらう</div><h1>候補の会社　${N(cs.length,"社")}</h1></div>
+  ${cs.length?`<p class="lead">あなたの情報を持っているかは、外からは分かりません。持っていそうな会社だけを並べています。</p>
+  <div class="list" id="cands">${cs.map(x=>{const r=S.req["o"+x.o];return `<button class="row" data-o="${x.o}"><span class="nm">${esc(x.c.n)}<span class="meta">候補に入れた理由：${esc(x.why)}</span><span class="meta">受付：${esc(x.c.how)}</span></span><span class="st${r?" on":""}">${r?"止めるよう求めた":""}</span>${ICON.chev}</button>`;}).join("")}</div>
+  <p class="note">全社には送りません。持っていない会社に送ると、そのとき初めて、あなたの名前と住所を渡すことになるためです。</p>`
+  :`<p class="empty" style="margin-top:32px">今の答えからは、送り先を絞れません。</p>
+  <p class="hint" style="text-align:center">DMや電話が来たら、その差出人の名前でもう一度調べられます。</p>`}
+  <div class="cta"><button class="textbtn" id="redo">質問に答え直す</button></div>`);
+  $("bk").onclick=K0;
+  $("redo").onclick=()=>{S.opt={a:{},name:"",del:false};KOptQ(0);};
+  document.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>KOptCo(+b.dataset.o));
+  if(S.just){flash(S.just);S.just=null;}
+}
+function KOptCo(o){
+  const c=OPT[o], x=optCands().find(y=>y.o===o);
+  render(`
+  <button class="back" id="bk">${ICON.back}候補の会社</button>
+  <div class="dh"><div class="k">届出の要約（架空）</div><h1>${esc(c.n)}</h1>
+    ${x?`<div class="stline"><span>候補に入れた理由：${esc(x.why)}</span></div>`:""}</div>
+  <div class="kv stack" style="margin-top:24px">
+    <div><span>事業の内容</span><b>${esc(c.what)}</b></div>
+    <div><span>取得の方法</span><b>${esc(c.get)}</b></div>
+    <div><span>提供する項目</span><b>${esc(c.items)}</b></div>
+    <div><span>提供先</span><b>${esc(c.to)}</b></div>
+    <div><span>受付の方法</span><b>${esc(c.how)}</b></div>
+    <div><span>宛先</span><b>${esc(c.dest)}</b></div>
+    <div><span>届出の日</span><b class="num">${ymd(c.filed)}</b></div>
+  </div>
+  <p class="hint">出典：個人情報保護委員会に出された届出書（デモでは架空）。確認日 ${ymd(OPT_DATE)}。</p>
+  <div class="cta">
+    <button class="primary" id="mk">この会社に止めてもらう文面を作る</button>
+    <p class="sub-cta">止めてもらうのに、手数料はかかりません。</p>
+  </div>`);
+  $("bk").onclick=KOptList;
+  $("mk").onclick=()=>KOptLetter(o);
+}
+function optLetter(c){
+  return `${c.n}\n第三者提供の停止の受付窓口　ご担当者様\n\n氏名：${USER}\n住所：${ME.addr}\n\n個人情報保護法第27条第2項に基づき、貴社が届け出ている第三者への提供について、私の個人データの第三者への提供を停止してください。\n`
+    +(S.opt.del?`あわせて、同法第35条第5項に基づき、私の保有個人データの利用の停止と消去を求めます。\n`:"")
+    +`\n停止した日と、貴社の資料に反映される時期（次のデータの更新の時期など）をお知らせください。\n\n${USER}`;
+}
+const optPre=c=>[["宛先",`${c.how}：${c.dest}`],["本人確認","氏名・住所（届いたDMの宛名と同じ書き方で）"],["手数料","停止に手数料はかかりません"]];
+function KOptLetter(o){
+  const c=OPT[o];
+  letterScreen({back:c.n,k:"止めてもらう文面",title:"提供を止めるよう求める",pre:optPre(c),
+    preNote:"宛名は、届いたDMと同じ書き方にすると、会社が探しやすくなります。",
+    extra:`<label class="chk one"><input type="checkbox" id="optdel" ${S.opt.del?"checked":""}><span>利用の停止と消去も、あわせて求める</span></label>
+    ${S.opt.del?`<p class="hint">消えるとは限りません。会社の答えを記録します。</p>`:""}`,
+    text:optLetter(c),
+    onBack:()=>KOptCo(o),
+    onSent:()=>{S.req["o"+o]={kind:"optout",date:TODAY};S.just=`[data-o="${o}"]`;toast("記録しました。返事は「依頼」で記録できます");KOptList();}
+  });
+  $("optdel").onchange=e=>{S.opt.del=e.target.checked;KOptLetter(o);};
+}
+
+/* ---------- ほかのサービスの記録で確かめる：各社の画面への辿り方（文字だけ。リンクは置かない） ---------- */
+function KExt(){
+  S.tab="list";
+  render(`
+  <button class="back" id="bk">${ICON.back}ホーム</button>
+  <div class="dh"><div class="k">お手続き</div><h1>ほかのサービスの記録で確かめる</h1></div>
+  <p class="lead">各社のサイトで、あなたが自分で書き出します。MyDataGuardがログインすることはありません。</p>
+  <div class="list" style="margin-top:16px">${EXT.map((x,j)=>`<button class="row" data-x="${j}"><span class="nm">${esc(x.n)}<span class="meta">${esc(x.c)}・${esc(x.know)}</span></span><span class="st"></span>${ICON.chev}</button>`).join("")}</div>
+  <p class="note">サービスの名前と画面の名前は架空です。実際のサービスでも、設定の「データの書き出し」「広告の設定」の欄にあることが多くあります。</p>
+  <button class="src" id="leak"><span><span class="k">漏えいの照会・監視について</span><span class="nm">組み込まない理由</span></span>${ICON.chev}</button>`);
+  $("bk").onclick=K0;
+  document.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>KExtOne(+b.dataset.x));
+  $("leak").onclick=KLeakWhy;
+}
+function KExtOne(j){
+  const x=EXT[j];
+  render(`
+  <button class="back" id="bk">${ICON.back}ほかのサービスの記録</button>
+  <div class="dh"><div class="k">${esc(x.c)}（架空）</div><h1>${esc(x.n)}</h1></div>
+  <p class="lead">${esc(x.know)}</p>
+  <section class="blk"><h2>自分のデータを書き出す</h2>
+    <ol class="todo">${x.steps.map(s=>`<li><span>${esc(s)}</span></li>`).join("")}</ol>
+  </section>
+  <section class="blk"><h2>広告の設定を見る</h2>
+    <p class="path">${esc(x.ad)}</p>
+  </section>
+  <p class="note">${x.ready?"書き出したファイルを、この端末の中で読む機能は準備中です。":"書き出しの形式を確かめているため、ファイルの読み取りは準備中です。"}<br>各社のサイトへのリンクは置いていません。上の画面の名前をたどってください。</p>`);
+  $("bk").onclick=KExt;
+}
+function KLeakWhy(){
+  render(`
+  <button class="back" id="bk">${ICON.back}ほかのサービスの記録</button>
+  <div class="dh"><div class="k">漏えいの照会・監視について</div><h1>漏えいの照会は、公式のサービスで、ご自身で調べられます</h1></div>
+  <p class="lead">MyDataGuardには組み込まず、本番では公式のサイトへのリンクだけを置く予定です（デモではリンクを置いていません）。</p>
+  <ol class="pl">
+    <li><span><b>メールアドレスを外に送ることになるため</b><p>照会には、あなたのメールアドレスを外のサービスに渡す必要があります。MyDataGuardは、一覧を端末の外に出さない作りです。</p></span></li>
+    <li><span><b>見つかっても、打つ手が少ないため</b><p>どの会社から出たかが分からないことが多く、できるのはパスワードの変更くらいです。</p></span></li>
+    <li><span><b>誤報の恐れがあるため</b><p>「売っている」という投稿をそのまま知らせると、会社が否定した話でも、不安だけを広げてしまいます。</p></span></li>
+  </ol>
+  <p class="note">携帯電話会社やセキュリティ会社にも、監視のサービスがあります。</p>`);
+  $("bk").onclick=KExt;
 }
 
 /* ---------- 構想：MyDataGuardがお預かりする情報 ---------- */
@@ -997,7 +1344,7 @@ function KM(){
   render(`
   <button class="back" id="bk">${ICON.back}本人確認だけの会社</button>
   <div class="dh"><div class="k">構想・準備中</div><h1>MyDataGuardがお預かりする情報</h1></div>
-  ${pcard({mode:"idp",who:"MyDataGuard",tag:`${ymd(IDP_DATE)}に本人確認`,cap:"MyDataGuardからは、お客さまがこう見えます（構想）"})}
+  ${pcard({mode:"idp",who:"MyDataGuard",tag:`${ymd(IDP_DATE)}に本人確認`,cap:"MyDataGuardからは、あなたがこう見えます（構想）"})}
   <p class="hint">MyDataGuardで本人確認したときの情報です（構想・架空のデータ）。住所は${ymd("2026-08-20")}に変更されました。</p>
   ${C[0]?pcard({mode:"future",who:C[0].n,tag:"会員情報",checks:C[0].checks,
     cap:`ほかの会社には、確認の結果だけを伝えます（例：${esc(C[0].n)}）`,
@@ -1021,7 +1368,7 @@ function KC(j,confirm){
   <div class="dh"><div class="k">本人確認だけの会社（構想）・${esc(c.c)}</div><h1>${esc(c.n)}</h1>
     <div class="stline">${off?`<span>${md(off)}に停止</span>`:`<span class="on">利用中</span>`}<span>MyDataGuardの記録で確定</span></div></div>
   ${pcard({mode:"future",who:c.n,tag:"会員情報",checks:c.checks,
-    cap:"この会社からは、お客さまがこう見えています",
+    cap:"この会社からは、あなたがこう見えています",
     foot:"この会社には、本人確認の結果だけを伝えています。氏名も住所も渡していません。"})}
   ${c.how.map(h=>`<p class="hint">${h}</p>`).join("")}
   <p class="hint">確認の記録をこの会社が持つのは、${c.until}です。</p>
@@ -1050,16 +1397,20 @@ function KC(j,confirm){
 }
 
 /* ---------- 依頼 ---------- */
-function KQ(){
+// lit：記録した直後の依頼（その行を光らせる）
+function KQ(lit){
   S.tab="req";
   const ks=Object.keys(S.req);
+  const st=r=>r.ans?`<span class="st on">${r.ans.kind==="noreply"?"返事なし":"回答あり"}</span>`
+    :days(r.date)>=AGAIN_D?`<span class="st on">${AGAIN_D}日たった</span>`:`<span class="st">返事待ち</span>`;
   render(`
   ${head()}
   <div class="dh" style="margin-top:24px"><div class="k">依頼</div><h1>返事を待っている依頼</h1></div>
-  ${ks.length?`<div class="list" style="margin-top:16px">${ks.map(i=>`<button class="row" data-i="${i}"><span class="nm">${esc(D[i][0])}<span class="meta">${REQ_KIND[S.req[i].kind]||"止める・消してもらう依頼"}・${md(S.req[i].date)}送信</span></span><span class="st">返事待ち</span>${ICON.chev}</button>`).join("")}</div>
-  <p class="note">返事のメールが届いたら、ここに記録します。</p>`
+  ${ks.length?`<div class="list" id="reqlist" style="margin-top:16px">${ks.map(k=>{const r=S.req[k];return `<button class="row" data-q="${k}"><span class="nm">${esc(reqName(k))}<span class="meta">${REQ_KIND[r.kind]||"止める・消してもらう依頼"}・${md(r.date)}送信${r.prev?"（2回目）":""}・<span class="num">${days(r.date)}</span>日</span>${r.ans?`<span class="meta">${esc(ansLabel(r.ans))}${r.ans.kind==="noreply"?"":"（会社の回答）"}</span>`:""}</span>${st(r)}${ICON.chev}</button>`;}).join("")}</div>
+  <p class="note">返事のメールが届いたら、行を押して記録してください。送ってから${AGAIN_D}日たっても返事がなければ、もう一度お願いする文面を作れます。</p>`
   :`<p class="empty">まだ依頼はありません。<br>ホームの「個人情報を渡している会社」から会社を選ぶと、依頼文を作れます。</p>`}`);
-  document.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>KD(+b.dataset.i));
+  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{S.ansTmp=null;KAns(b.dataset.q);});
+  if(lit!==undefined) flash(`[data-q="${lit}"]`);
 }
 
 /* ---------- 方針：1はアルファ版の作り（事実）。2〜5は検討中の方針 ---------- */
@@ -1067,13 +1418,13 @@ function K7(){
   S.tab="promise";
   render(`
   ${head()}
-  <div class="dh" style="margin-top:24px"><div class="k">MyDataGuardの方針</div><h1>お客さまの情報の扱い</h1></div>
+  <div class="dh" style="margin-top:24px"><div class="k">MyDataGuardの方針</div><h1>あなたの情報の扱い</h1></div>
   <ol class="pl">
     <li><span><b>会社の一覧は、この端末の中だけに置きます</b><p>メールは件名・差出人・日付だけを、この端末の中で読みます。ご自身で直した内容・追加した会社も、運営者のサーバーには送りません。企業・当局の公表との照らし合わせも、この端末の中で行います。</p></span></li>
     <li><span><b>本人確認だけの会社には、確認の結果だけを伝える（構想）</b><p>氏名や住所は渡さず、「本人確認済み」「20歳以上」といった結果だけを伝える仕組みを準備しています。会社ごとに、いつでも止められるようにする方針です。</p></span></li>
-    <li><span><b>どこで使ったかの記録は、決めた用途にしか使わない（検討中）</b><p>お客さまへの表示、ご連絡の中継、利用料の精算、法令に基づく開示のためだけに使う方針です。営業・広告・審査には使わないことを検討しています。</p></span></li>
-    <li><span><b>情報を売らない（検討中）</b><p>確認の結果は、お客さまが伝えると決めた1件ごとにしか出さない方針です。</p></span></li>
-    <li><span><b>開示は、法令に基づく請求のときだけ（検討中）</b><p>法令でお知らせしてはならないとされる場合などを除き、お客さまにお知らせし、開示の件数を毎年公表することを検討しています。</p></span></li>
+    <li><span><b>どこで使ったかの記録は、決めた用途にしか使わない（検討中）</b><p>あなたへの表示、ご連絡の中継、利用料の精算、法令に基づく開示のためだけに使う方針です。営業・広告・審査には使わないことを検討しています。</p></span></li>
+    <li><span><b>情報を売らない（検討中）</b><p>確認の結果は、あなたが伝えると決めた1件ごとにしか出さない方針です。</p></span></li>
+    <li><span><b>開示は、法令に基づく請求のときだけ（検討中）</b><p>法令でお知らせしてはならないとされる場合などを除き、あなたにお知らせし、開示の件数を毎年公表することを検討しています。</p></span></li>
   </ol>
   <section class="blk"><h2>設定</h2>
     <div class="box" style="margin-top:8px">
@@ -1089,7 +1440,35 @@ function K7(){
   bindWatch(K7);
 }
 $("restart").onclick=()=>{S=S0();first=true;KS();};
-KS();
+
+/* ---------- テスト用の入口（#t_…）。公開サイトの検査（tests/check_public_site.py）が Chrome ヘッドレスで開き、
+   画面のボタンを順に押したあとの状態を確かめる。ふだんの表示には影響しない ---------- */
+const tap=sel=>{const e=document.querySelector(sel);if(!e)throw new Error("見つかりません: "+sel);e.click();};
+const home=()=>{S.linked=true;K0();};
+const NORIKA=()=>{home();S.kdFrom="home";KD(D.findIndex(d=>d[0]==="ノリカ カーシェア"));};
+const optTo=a=>{home();tap("#opt");tap("#start");a.forEach(v=>tap(`#screen [data-a="${v}"]`));tap("#skip");};
+const CANDS=()=>optTo(["yes","no","yes"]);
+const TEST={
+ t_window:()=>{NORIKA();$("mado").scrollIntoView();},
+ t_ask_have:()=>{NORIKA();tap("#ask");tap('[data-k="ask"]');},
+ t_ask_rec:()=>{NORIKA();tap("#ask");tap('[data-k="rec"]');},
+ t_answer:()=>{home();tap('#tabbar [data-t="req"]');tap(`[data-q="${SEED_I}"]`);tap('[data-a="stopped"]');},
+ t_again:()=>{home();tap('#tabbar [data-t="req"]');tap(`[data-q="${SEED_I}"]`);tap("#again");},
+ t_opt_cands:CANDS,
+ t_opt_none:()=>optTo(["no","no","no"]),
+ t_opt_summary:()=>{CANDS();tap("[data-o]");},
+ t_opt_letter:()=>{CANDS();tap("[data-o]");tap("#mk");},
+ t_opt_done:()=>{CANDS();tap("[data-o]");tap("#mk");tap("#sent");tap('#tabbar [data-t="req"]');tap('[data-q="o0"]');tap('[data-a="stopped"]');tap("#rec");},
+ t_ext:()=>{home();tap("#ext");},
+ t_ext_one:()=>{home();tap("#ext");tap('[data-x="0"]');},
+ t_leakwhy:()=>{home();tap("#ext");tap("#leak");}
+};
+const T_NAME=location.hash.slice(1);
+if(Object.prototype.hasOwnProperty.call(TEST,T_NAME)){
+  first=false;
+  try{TEST[T_NAME]();document.body.dataset.scenarioDone=T_NAME;}
+  catch(e){document.body.dataset.scenarioError=String(e&&e.message||e);}
+} else KS();
 </script>
 </body>
 </html>
