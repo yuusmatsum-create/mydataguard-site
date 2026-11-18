@@ -1,5 +1,5 @@
 ---
-// 記事の一覧。各記事は「見出し → MyDataGuard の視点（抜粋）→ 優先度・原因」の順に見せる。
+// 記事の一覧。各記事は「見出し → 要約1行 → MyDataGuard の視点（抜粋）→ 優先度・原因」の順に見せる。
 // 事実の要約より示唆を前に出すのが、このメディアの売り。
 import Kicker from './Kicker.astro';
 import Prio from './Prio.astro';
@@ -16,9 +16,8 @@ const { items, empty = 'まだ記事がありません。毎朝更新します�
         <li class={`item${e.data.priority === 'now' ? ' is-now' : ''}`}>
           <Kicker data={e.data} />
           <h3><a href={url(`${e.id}/`)}>{displayTitle(e.data.title)}</a></h3>
-          {e.data.insight
-            ? <p class="item-ins"><span class="lbl">視点</span>{e.data.insight}</p>
-            : <p class="n-sum">{e.data.summary}</p>}
+          <p class="n-sum">{e.data.summary}</p>
+          {e.data.insight && <p class="item-ins"><span class="lbl">視点</span>{e.data.insight}</p>}
           {(e.data.priority || e.data.cause) && (
             <p class="item-foot">
               {e.data.priority && <Prio p={e.data.priority} />}

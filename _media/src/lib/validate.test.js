@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validateArticle } from './validate.js';
+import { validateArticle, CATEGORIES } from './validate.js';
 
 const base = () => ({
   data: {
-    title: '【脆弱性】サンプル製品に深刻な脆弱性（CVE-2026-0001）',
+    title: 'サンプル製品に深刻な脆弱性（CVE-2026-0001）',
     category: 'vulnerability',
     publishedAt: '2026-11-18',
     summary: '要約',
@@ -87,6 +87,24 @@ describe('validateArticle', () => {
     a.data.category = 'digest';
     delete a.data.insight;
     expect(validateArticle(a).errors).toEqual([]);
+  });
+
+  it('表記: タイトル先頭の【脆弱性】などは付けない（警告）', () => {
+    const a = base();
+    a.data.title = '【脆弱性】サンプル製品に深刻な脆弱性';
+    const r = validateArticle(a);
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.join()).toMatch(/【】/);
+  });
+
+  it('表記: 「漏洩」は「漏えい」にそろえる（警告）', () => {
+    const a = base();
+    a.data.title = 'サンプル社で情報漏洩';
+    expect(validateArticle(a).warnings.join()).toMatch(/漏えい/);
+  });
+
+  it('表記: カテゴリ名は「漏えい・インシデント」', () => {
+    expect(CATEGORIES.incident).toBe('漏えい・インシデント');
   });
 
   it('事案記事は原因分類が必須', () => {

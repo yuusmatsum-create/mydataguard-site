@@ -141,7 +141,8 @@
 .list h3 a:focus-visible{outline:none}
 .list h3 a:focus-visible::after{outline:2px solid var(--ink);outline-offset:4px;border-radius:var(--r)}
 .list .n-sum,.item-ins{margin-top:10px;font-size:var(--t4);line-height:1.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-.list .n-sum{color:var(--sub)}
+.list .n-sum{color:var(--sub);-webkit-line-clamp:1;line-clamp:1}
+.list .n-sum+.item-ins{margin-top:8px}
 .item-ins{color:var(--text);padding-left:12px;border-left:2px solid var(--ink)}
 .item-ins .lbl{font-weight:600;color:var(--ink);margin-right:8px;letter-spacing:.08em}
 .item-foot{margin-top:auto;padding-top:14px;display:flex;flex-wrap:wrap;gap:8px}
@@ -150,7 +151,7 @@
 @media (max-width:640px){
   .list{grid-template-columns:1fr}
   .list .item{padding:20px 0 22px}
-  .list .n-sum,.item-ins{-webkit-line-clamp:3}
+  .item-ins{-webkit-line-clamp:3}
 }
 
 /* ---------- 記事 ---------- */

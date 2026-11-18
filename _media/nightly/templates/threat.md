@@ -1,5 +1,5 @@
 ---
-title: "【動向】{テーマ}"
+title: "{テーマ}"
 category: threat
 summary: "{120字以内}"
 insight: "{MyDataGuard の視点}"

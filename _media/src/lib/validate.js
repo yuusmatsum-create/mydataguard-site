@@ -2,7 +2,7 @@
 // errors が1件でもあればビルドを止める。warnings は朝の確認で人が判断する。
 
 export const CATEGORIES = {
-  incident: '情報漏洩・インシデント',
+  incident: '漏えい・インシデント',
   vulnerability: '脆弱性',
   threat: '脅威動向',
   digest: '朝刊ダイジェスト',
@@ -60,6 +60,10 @@ export function validateArticle({ data = {}, body = '' }) {
     const m = text.match(re);
     if (m) errors.push(`個人情報の可能性: ${label}（${m[0]}）`);
   }
+
+  // 表記ルール
+  if (/^【[^】]*】/.test(data.title ?? '')) warnings.push('タイトル先頭の【】（カテゴリ名）は付けません。カテゴリは画面に別に表示されます');
+  if (text.includes('漏洩')) warnings.push('「漏洩」は「漏えい」にそろえてください');
 
   for (const w of LOADED_WORDS) {
     if (text.includes(w)) warnings.push(`評価語「${w}」があります。事実の記述に置き換えられないか確認してください`);

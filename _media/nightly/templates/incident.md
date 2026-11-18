@@ -1,5 +1,5 @@
 ---
-title: "【事案】{組織名}、{何が起きたか}（{影響の規模}）"
+title: "{組織名}、{何が起きたか}（{影響の規模}）"
 category: incident
 cause: {ransomware | unauthorized-vuln | unauthorized-cred | misconfig | misdelivery-loss | insider | supply-chain | unknown}
 summary: "{120字以内。誰が・いつ・何を公表し・影響はどこまでか}"
