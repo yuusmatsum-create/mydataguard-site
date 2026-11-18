@@ -2,48 +2,108 @@
 import Base from '../layouts/Base.astro';
 import Kicker from '../components/Kicker.astro';
 import ArticleList from '../components/ArticleList.astro';
+import Prio from '../components/Prio.astro';
+import Icon from '../components/Icon.astro';
 import { getArticles, url, fmtDate } from '../lib/articles.js';
+import { CAUSES } from '../lib/validate.js';
+import { displayTitle, splitInsight, WEEKDAY, factOf } from '../lib/display.js';
 
+const DAY = 24 * 60 * 60 * 1000;
 const all = await getArticles();
-const [lead, ...rest] = all.filter((e) => e.data.category !== 'digest');
+const news = all.filter((e) => e.data.category !== 'digest');
+const newest = all[0]?.data.publishedAt ?? new Date();
+const within = (e, days) => newest - e.data.publishedAt <= days * DAY;
+
+const lead = news[0];
 const digest = all.find((e) => e.data.category === 'digest');
-const urgent = all.filter((e) => e.data.priority === 'now' && e !== lead).slice(0, 6);
-const today = fmtDate(new Date());
+// 「今すぐ対応」は直近30日のものだけ。古い記事が残り続けないようにする
+const urgent = news.filter((e) => e.data.priority === 'now' && e !== lead && within(e, 30)).slice(0, 5);
+const urgentCount = news.filter((e) => e.data.priority === 'now' && within(e, 30)).length;
+const weekCount = news.filter((e) => within(e, 7)).length;
+// 新着は、上で見せた記事を除いて重複させない
+const shown = new Set([lead, ...urgent]);
+const rest = news.filter((e) => !shown.has(e)).slice(0, 18);
+
+const now = new Date();
+const today = `${fmtDate(now)}（${WEEKDAY[now.getUTCDay()]}）`;
+const ins = lead ? splitInsight(lead.data.insight) : null;
 ---
 <Base title="MyDataGuard ニュース｜漏えい・脆弱性・脅威を、毎朝3分で" description="国内の情報漏えい事案、悪用されている脆弱性、最新の脅威動向を、公式発表と公的機関の情報だけをもとに、要点と「自社でやるべきこと」に絞って毎朝お届けします。" current="home">
-  <section class="masthead">
-    <div class="wrap">
-      <p class="eyebrow"><span>MyDataGuard ニュース</span><span class="num">{today}</span></p>
-      <h1>漏えい・脆弱性・脅威を、<em>毎朝3分</em>で。</h1>
-      <p class="lead">公式発表と公的機関の情報だけを根拠に、要点と「自社でやるべきこと」に絞ってお届けします。</p>
+  <section class="mast">
+    <div class="wrap mast-in">
+      <div>
+        <p class="mast-date"><time datetime={now.toISOString().slice(0, 10)}>{today}</time></p>
+        <h1>漏えい・脆弱性・脅威を、<em>毎朝3分</em>で。</h1>
+        <p class="mast-lead">公式発表と公的機関の情報だけを根拠に、要点と「自社でやるべきこと」に絞ってお届けします。</p>
+      </div>
+      <dl class="today" aria-label="いまの状況">
+        <div class={urgentCount > 0 ? 'hot' : ''}><dt>今すぐ対応</dt><dd><a href="#urgent"><b class="num">{urgentCount}</b>件<span class="sr">の一覧へ移動</span></a></dd></div>
+        <div><dt>直近7日の記事</dt><dd><b class="num">{weekCount}</b>本</dd></div>
+      </dl>
     </div>
   </section>
 
-  <div class="wrap">
-    {lead && (
-      <article class="lead-story">
-        <div>
-          <Kicker data={lead.data} />
-          <h2><a href={url(`${lead.id}/`)}>{lead.data.title}</a></h2>
-          <p class="n-sum">{lead.data.summary}</p>
-        </div>
-        {lead.data.insight && (
-          <aside aria-label="MyDataGuard の視点">
+  <div class="wrap front">
+    {lead ? (
+      <article class="lead-story" aria-labelledby="lead-h">
+        <p class="sec-label">トップ記事</p>
+        <Kicker data={lead.data} />
+        <h2 id="lead-h"><a href={url(`${lead.id}/`)}>{displayTitle(lead.data.title)}</a></h2>
+        <p class="n-sum">{lead.data.summary}</p>
+        {(lead.data.priority || lead.data.cause) && (
+          <p class="item-foot">
+            {lead.data.priority && <Prio p={lead.data.priority} />}
+            {lead.data.cause && <span class="cause"><Icon name="cause" size={14} />原因：{CAUSES[lead.data.cause]}</span>}
+          </p>
+        )}
+        {ins && (
+          <aside class="insight" aria-label="MyDataGuard の視点">
             <p class="k">MyDataGuard の視点</p>
-            <p>{lead.data.insight}</p>
+            <p class="ins-head">{ins.head}</p>
+            {ins.rest && <p class="ins-rest">{ins.rest}</p>}
           </aside>
         )}
+        <a class="more" href={url(`${lead.id}/`)}>
+          {lead.data.actions.length > 0 ? `記事と「自社でやるべきこと」${lead.data.actions.length}項目を読む` : '記事を読む'}<Icon name="arrow" size={16} />
+        </a>
       </article>
-    )}
+    ) : <p class="empty">まだ記事がありません。毎朝更新します。</p>}
 
-    {urgent.length > 0 && (
-      <>
-        <div class="sec-head"><h2>今すぐ対応が必要な脆弱性</h2><a href={url('category/vulnerability/')}>脆弱性の記事をすべて見る</a></div>
-        <ArticleList items={urgent} />
-      </>
-    )}
+    <div class="rail">
+      <section class={`urgent${urgentCount === 0 ? ' is-clear' : ''}`} id="urgent" aria-labelledby="urgent-h">
+        <h2 id="urgent-h"><Icon name="alert" size={20} />今すぐ対応が必要な脆弱性</h2>
+        {urgent.length > 0 ? (
+          <ul>
+            {urgent.map((e) => (
+              <li>
+                <a href={url(`${e.id}/`)}>
+                  <b>{displayTitle(e.data.title)}</b>
+                  <span class="u-meta">
+                    {[factOf(e.data, '深刻度'), factOf(e.data, '悪用状況')].filter(Boolean).join('　／　') || fmtDate(e.data.publishedAt)}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="u-none">{urgentCount > 0 ? 'トップ記事を確認してください。' : 'いま、今すぐ対応が必要な脆弱性の記事はありません。'}</p>
+        )}
+        <a class="u-all" href={url('category/vulnerability/')}>脆弱性の記事をすべて見る</a>
+      </section>
 
-    <div class="sec-head"><h2>新着</h2>{digest && <a href={url(`${digest.id}/`)}>今日の朝刊を読む</a>}</div>
-    <ArticleList items={lead ? rest.slice(0, 18) : []} />
+      {digest && (
+        <section class="paper" aria-labelledby="paper-h">
+          <p class="k"><Icon name="digest" size={18} />今朝の朝刊<time datetime={digest.data.publishedAt.toISOString().slice(0, 10)}>{fmtDate(digest.data.publishedAt)}</time></p>
+          <h2 id="paper-h">{displayTitle(digest.data.title).replace(/^朝刊\s*[0-9０-９]+月[0-9０-９]+日[：:]\s*/, '')}</h2>
+          <p>{digest.data.summary}</p>
+          <a class="btn" href={url(`${digest.id}/`)}>朝刊を読む</a>
+        </section>
+      )}
+    </div>
   </div>
+
+  {lead && <div class="wrap">
+    <div class="sec-head"><h2>新着</h2><a href={url('rss.xml')}>RSS で受け取る</a></div>
+    <ArticleList items={rest} empty="ほかの新着記事はまだありません。" />
+  </div>}
 </Base>

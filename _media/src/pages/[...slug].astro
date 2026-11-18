@@ -2,8 +2,11 @@
 import { render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Kicker from '../components/Kicker.astro';
+import ArticleList from '../components/ArticleList.astro';
+import Icon from '../components/Icon.astro';
 import { getArticles, url, fmtDate } from '../lib/articles.js';
-import { CAUSES } from '../lib/validate.js';
+import { CAUSES, CATEGORIES } from '../lib/validate.js';
+import { displayTitle, splitInsight, PRIO } from '../lib/display.js';
 
 export async function getStaticPaths() {
   const all = await getArticles();
@@ -13,8 +16,14 @@ const { entry } = Astro.props;
 const d = entry.data;
 const { Content } = await render(entry);
 
+// 原因の分類は見出し直下の「状況の帯」で見せるので、概要表には重ねない
 const facts = [...d.facts];
-if (d.cause) facts.push({ label: '原因の分類', value: CAUSES[d.cause] });
+const ins = splitInsight(d.insight);
+const all = await getArticles();
+const related = [
+  ...all.filter((e) => e.id !== entry.id && e.data.category === d.category),
+  ...all.filter((e) => e.id !== entry.id && e.data.category !== d.category && e.data.category !== 'digest'),
+].slice(0, 3);
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -30,20 +39,43 @@ const jsonLd = {
 <Base title={`${d.title}｜MyDataGuard ニュース`} description={d.summary} current={d.category} ogType="article" jsonLd={jsonLd}>
   <article class="wrap">
     <div class="article">
-      <Kicker data={d} />
-      <h1>{d.title}</h1>
-      <p class="n-sum">{d.summary}</p>
+      <header class="a-head">
+        <Kicker data={d} />
+        <h1>{displayTitle(d.title)}</h1>
+        <p class="n-sum">{d.summary}</p>
+      </header>
 
-      {facts.length > 0 && (
-        <dl class="facts">
-          {facts.map((f) => (<><dt>{f.label}</dt><dd>{f.value}</dd></>))}
-        </dl>
+      {d.priority && (
+        <div class={`status s-${d.priority}`}>
+          <p class="st-k">対応の優先度</p>
+          <ol class="scale" aria-label={`対応の優先度：${PRIO[d.priority].label}（3段階）`}>
+            {['now', 'week', 'planned'].map((k) => (
+              <li class={k === d.priority ? 'on' : ''} aria-current={k === d.priority ? 'step' : undefined}>{PRIO[k].short}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {d.cause && (
+        <div class="status s-cause">
+          <p class="st-k">原因の分類</p>
+          <p class="st-v"><Icon name="cause" size={18} />{CAUSES[d.cause]}</p>
+        </div>
       )}
 
       {d.insight && (
-        <section class="insight" aria-label="MyDataGuard の視点">
-          <p class="k">MyDataGuard の視点</p>
-          <p>{d.insight}</p>
+        <section class="insight big" aria-labelledby="ins-h">
+          <h2 class="k" id="ins-h">MyDataGuard の視点</h2>
+          <p class="ins-head">{ins.head}</p>
+          {ins.rest && <p class="ins-rest">{ins.rest}</p>}
+        </section>
+      )}
+
+      {facts.length > 0 && (
+        <section class="facts-box" aria-labelledby="facts-h">
+          <h2 id="facts-h">概要</h2>
+          <dl class="facts">
+            {facts.map((f) => (<div><dt>{f.label}</dt><dd>{f.value}</dd></div>))}
+          </dl>
         </section>
       )}
 
@@ -51,7 +83,7 @@ const jsonLd = {
 
       {d.actions.length > 0 && (
         <section class="actions" aria-labelledby="actions-h">
-          <h2 id="actions-h">自社でやるべきこと</h2>
+          <h2 id="actions-h"><Icon name="check" size={20} />自社でやるべきこと</h2>
           <ol>{d.actions.map((a) => <li>{a}</li>)}</ol>
         </section>
       )}
@@ -93,4 +125,11 @@ const jsonLd = {
       </p>
     </div>
   </article>
+
+  {related.length > 0 && (
+    <section class="wrap related" aria-labelledby="rel-h">
+      <div class="sec-head"><h2 id="rel-h">次に読む</h2><a href={url(`category/${d.category}/`)}>{CATEGORIES[d.category]}の記事をすべて見る</a></div>
+      <ArticleList items={related} />
+    </section>
+  )}
 </Base>

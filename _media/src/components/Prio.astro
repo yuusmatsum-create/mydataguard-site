@@ -1,0 +1,12 @@
+---
+// 対応の優先度。3本の棒で段階を示し、文字でも必ず書く（色だけに頼らない）。
+import { PRIO } from '../lib/display.js';
+const { p } = Astro.props;
+const v = PRIO[p];
+---
+{v && (
+  <span class={`prio ${p}`}>
+    <span class="bars" aria-hidden="true"><i class={v.level >= 1 ? 'on' : ''}></i><i class={v.level >= 2 ? 'on' : ''}></i><i class={v.level >= 3 ? 'on' : ''}></i></span>
+    {v.label}
+  </span>
+)}

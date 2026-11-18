@@ -1,16 +1,30 @@
 ---
+// 記事の一覧。各記事は「見出し → MyDataGuard の視点（抜粋）→ 優先度・原因」の順に見せる。
+// 事実の要約より示唆を前に出すのが、このメディアの売り。
 import Kicker from './Kicker.astro';
+import Prio from './Prio.astro';
+import Icon from './Icon.astro';
 import { url } from '../lib/articles.js';
-const { items } = Astro.props;
+import { CAUSES } from '../lib/validate.js';
+import { displayTitle } from '../lib/display.js';
+const { items, empty = 'まだ記事がありません。毎朝更新します。' } = Astro.props;
 ---
 {items.length === 0
-  ? <p class="empty">まだ記事がありません。毎朝更新します。</p>
+  ? <p class="empty">{empty}</p>
   : <ul class="list">
       {items.map((e) => (
-        <li>
+        <li class={`item${e.data.priority === 'now' ? ' is-now' : ''}`}>
           <Kicker data={e.data} />
-          <h3><a href={url(`${e.id}/`)}>{e.data.title}</a></h3>
-          <p class="n-sum">{e.data.summary}</p>
+          <h3><a href={url(`${e.id}/`)}>{displayTitle(e.data.title)}</a></h3>
+          {e.data.insight
+            ? <p class="item-ins"><span class="lbl">視点</span>{e.data.insight}</p>
+            : <p class="n-sum">{e.data.summary}</p>}
+          {(e.data.priority || e.data.cause) && (
+            <p class="item-foot">
+              {e.data.priority && <Prio p={e.data.priority} />}
+              {e.data.cause && <span class="cause"><Icon name="cause" size={14} />原因：{CAUSES[e.data.cause]}</span>}
+            </p>
+          )}
         </li>
       ))}
     </ul>}

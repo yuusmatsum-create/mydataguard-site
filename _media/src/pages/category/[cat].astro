@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import ArticleList from '../../components/ArticleList.astro';
+import Icon from '../../components/Icon.astro';
 import { getArticles } from '../../lib/articles.js';
 import { CATEGORIES } from '../../lib/validate.js';
 
@@ -18,11 +19,11 @@ const LEAD = {
 };
 ---
 <Base title={`${CATEGORIES[cat]}｜MyDataGuard ニュース`} description={LEAD[cat]} current={cat}>
-  <section class="masthead">
+  <section class="mast sub">
     <div class="wrap">
-      <p class="eyebrow">カテゴリ</p>
-      <h1>{CATEGORIES[cat]}</h1>
-      <p class="lead">{LEAD[cat]}</p>
+      <p class="mast-date">カテゴリ</p>
+      <h1 class="cat-h"><Icon name={cat} size={32} />{CATEGORIES[cat]}<span class="cnt"><b class="num">{items.length}</b>本</span></h1>
+      <p class="mast-lead">{LEAD[cat]}</p>
     </div>
   </section>
   <div class="wrap"><ArticleList items={items} /></div>

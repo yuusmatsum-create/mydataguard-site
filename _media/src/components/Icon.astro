@@ -1,0 +1,15 @@
+---
+// インラインSVGのアイコン。外部リソースは使わない。色は currentColor。
+const { name, size = 16 } = Astro.props;
+const P = {
+  incident: '<path d="M5 2.75h6.25L15 6.5v10.75H5z"/><path d="M11 2.75V6.75h4"/><path d="M8 12.5h6m-2.25-2.25L14 12.5l-2.25 2.25"/>',
+  vulnerability: '<path d="M10 2.5 16 5v4.6c0 3.9-2.6 6.6-6 7.9-3.4-1.3-6-4-6-7.9V5z"/><path d="m10.6 5.8-1.9 3.6h2.6l-1.9 3.8"/>',
+  threat: '<circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3.5"/><path d="m10 10 5-5"/>',
+  digest: '<path d="M3.5 4.5h10v11h-8a2 2 0 0 1-2-2z"/><path d="M13.5 7.5h3v6a2 2 0 0 1-2 2h-1"/><path d="M6 7.5h5M6 10h5M6 12.5h3"/>',
+  alert: '<path d="M10 3 17.5 16h-15z"/><path d="M10 8v3.5"/><circle cx="10" cy="13.75" r=".6" fill="currentColor"/>',
+  check: '<rect x="3" y="3" width="14" height="14" rx="3"/><path d="m6.5 10 2.5 2.5 4.5-5"/>',
+  cause: '<circle cx="8.5" cy="8.5" r="5"/><path d="m12.25 12.25 4.25 4.25"/>',
+  arrow: '<path d="M4 10h12m-4.5-4.5L16 10l-4.5 4.5"/>',
+};
+---
+<svg class="ico" width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" set:html={P[name]} />

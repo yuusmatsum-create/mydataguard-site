@@ -1,127 +1,244 @@
 /* MyDataGuard ニュース 追加スタイル
    /style.css の約束事（紺の墨と紙の白、強調は朱1色、文字4段階、太さ400/600、角丸12px、影なし）を守る。
-   ニュースは「読む」場所なので、本文の行長を 36〜40字 に抑え、情報の階層を罫線と余白で分ける。 */
+   ニュースは「読む」場所。情報の階層は「罫線の太さ」と「紺の面」で分け、色は増やさない。
+     - 紺の面（塗り）  … MyDataGuard の視点（このメディアの主役）
+     - 朱             … 今すぐ対応が必要なもの、と見出しの一語だけ
+     - 太い紺の罫     … セクションの始まり
+   ルートの /style.css と名前がぶつかる場合は .news の下でだけ上書きする。 */
 
 .news main{min-height:60vh}
+.news .ico{flex:none;display:inline-block}
 
 /* ---------- カテゴリの帯 ---------- */
 .cats{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:5}
 .cats .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .cats .wrap::-webkit-scrollbar{display:none}
 .cats a{flex:none;display:inline-flex;align-items:center;min-height:48px;padding:0 12px;font-size:var(--t4);font-weight:600;
-  color:var(--sub);text-decoration:none;border-bottom:2px solid transparent;letter-spacing:.04em}
+  color:var(--sub);text-decoration:none;border-bottom:3px solid transparent;letter-spacing:.04em}
 .cats a:first-child{padding-left:0}
 .cats a:hover{color:var(--ink)}
 .cats a[aria-current=page]{color:var(--ink);border-bottom-color:var(--ink)}
+.cats a:focus-visible{outline-offset:-2px}
 .nav a[aria-current=page]{text-decoration:underline}
 
-/* ---------- 題字 ---------- */
-.masthead{padding:56px 0 40px;border-bottom:1px solid var(--ink)}
-.masthead .eyebrow{display:flex;gap:12px;flex-wrap:wrap}
-.masthead h1{margin-top:12px;font-size:var(--t1);font-weight:600;line-height:1.25;color:var(--ink);letter-spacing:.01em}
-.masthead h1 em{font-style:normal;background:linear-gradient(transparent 82%,var(--accent) 82%,var(--accent) 92%,transparent 92%)}
-.masthead p.lead{margin-top:16px;max-width:36em;color:var(--sub)}
+/* ---------- 題字（トップ）：売り文句より「今日の状況」を先に ---------- */
+.mast{padding:32px 0 28px;border-bottom:3px solid var(--ink)}
+.mast-in{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px 48px;align-items:end}
+.mast-date{font-family:var(--num);font-size:var(--t4);font-weight:600;color:var(--sub);letter-spacing:.08em}
+.mast h1{margin-top:4px;font-size:var(--t2);font-weight:600;line-height:1.4;color:var(--ink);letter-spacing:.01em}
+.mast h1 em{font-style:normal;background:linear-gradient(transparent 80%,var(--accent) 80%,var(--accent) 92%,transparent 92%)}
+.mast-lead{margin-top:8px;font-size:var(--t4);color:var(--sub);max-width:44em;line-height:1.8}
+.today{display:flex;gap:0;border:1px solid var(--ink);border-radius:var(--r);overflow:hidden;background:var(--surface)}
+.today div{padding:10px 20px;min-width:136px}
+.today div+div{border-left:1px solid var(--line)}
+.today dt{font-size:var(--t4);font-weight:600;color:var(--sub);letter-spacing:.04em;white-space:nowrap}
+.today dd{font-size:var(--t4);color:var(--sub);line-height:1.2}
+.today dd b{font-size:var(--t2);font-weight:600;color:var(--ink);margin-right:2px}
+.today dd a{color:inherit;text-decoration:none;display:inline-flex;align-items:baseline;min-height:36px}
+.today dd a::after{content:"";position:absolute;inset:0}
+.today div{position:relative}
+.today dd a:focus-visible{outline:none}
+.today dd a:focus-visible::after{outline:2px solid var(--ink);outline-offset:-4px;border-radius:var(--r)}
+.today .hot{background:var(--accent)}
+.today .hot dd a:focus-visible::after{outline-color:#fff}
+.urgent{scroll-margin-top:64px}
+.today .hot dt,.today .hot dd,.today .hot dd b{color:#fff}
+@media (max-width:760px){
+  .mast{padding:20px 0 20px}
+  .mast-in{grid-template-columns:1fr;gap:16px}
+  .today div{flex:1;min-width:0;padding:8px 16px}
+}
+
+/* カテゴリ・タグの題字 */
+.mast.sub{padding:40px 0 28px}
+.cat-h{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}
+.cat-h .ico{width:1em;height:1em}
+.cat-h .cnt{font-size:var(--t4);font-weight:400;color:var(--sub);margin-left:4px;align-self:flex-end;padding-bottom:6px}
+.cat-h .cnt b{font-size:var(--t3);color:var(--ink);margin-right:2px}
+@media (max-width:640px){.mast.sub{padding:28px 0 20px}}
 
 /* ---------- 記事の小見出し（カテゴリ・日付） ---------- */
-.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:var(--t4);color:var(--sub);letter-spacing:.04em}
-.kicker .cat{font-weight:600;color:var(--ink);text-decoration:none}
+.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:var(--t4);color:var(--sub);letter-spacing:.04em;line-height:1.6}
+.kicker .cat{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink);text-decoration:none;min-height:24px}
 .kicker .cat:hover{text-decoration:underline}
 .kicker time{font-family:var(--num)}
+.kicker .draft{font-weight:600;color:var(--sub);border:1px dashed var(--mute);border-radius:var(--r);padding:0 8px;line-height:1.7}
 
-/* 対応の優先度（脆弱性）。「今すぐ」だけ朱で塗る */
-.prio{display:inline-flex;align-items:center;gap:6px;font-size:var(--t4);font-weight:600;border-radius:var(--r);padding:0 10px;line-height:2;white-space:nowrap}
-.prio::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-.prio.now{background:var(--accent);color:#fff}
-.prio.week{border:1px solid var(--ink);color:var(--ink)}
-.prio.planned{border:1px solid var(--mute);color:var(--sub)}
+/* 対応の優先度（脆弱性）。3本の棒で段階を示す。「今すぐ」だけ朱で塗る */
+.prio{display:inline-flex;align-items:center;gap:8px;font-size:var(--t4);font-weight:600;border-radius:var(--r);padding:0 10px 0 8px;line-height:24px;white-space:nowrap;border:1px solid currentColor}
+.prio .bars{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+.prio .bars i{display:block;width:3px;background:currentColor;opacity:.28;border-radius:1px}
+.prio .bars i:nth-child(1){height:5px}.prio .bars i:nth-child(2){height:8px}.prio .bars i:nth-child(3){height:12px}
+.prio .bars i.on{opacity:1}
+.prio.now{background:var(--accent);border-color:var(--accent);color:#fff}
+.prio.week{color:var(--ink)}
+.prio.planned{color:var(--sub);border-color:var(--mute)}
 
-/* ---------- 一覧 ---------- */
-.lead-story{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:48px;padding:48px 0;border-bottom:1px solid var(--line)}
-.lead-story h2{margin-top:12px;font-size:var(--t2);font-weight:600;line-height:1.45;color:var(--ink)}
+/* 事案の原因分類 */
+.cause{display:inline-flex;align-items:center;gap:6px;font-size:var(--t4);font-weight:600;color:var(--ink);background:var(--fill);border-radius:var(--r);padding:0 10px;line-height:24px;white-space:nowrap}
+
+/* ---------- 「MyDataGuard の視点」：紺の面。サイトでいちばん強い要素 ---------- */
+.insight{background:var(--ink);color:#fff;border-radius:var(--r);padding:24px 28px 28px;position:relative}
+.insight .k{display:flex;align-items:center;gap:10px;font-size:var(--t4);font-weight:600;letter-spacing:.12em;color:rgba(255,255,255,.78)}
+.insight .k::before{content:"";width:24px;height:3px;background:var(--accent);flex:none}
+.insight .ins-head{margin-top:14px;font-size:var(--t3);font-weight:600;line-height:1.8;color:#fff}
+.insight .ins-rest{margin-top:8px;font-size:var(--t3);line-height:1.95;color:rgba(255,255,255,.86)}
+
+/* ---------- トップ：トップ記事＋右の柱 ---------- */
+.front{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:48px;padding-top:40px;padding-bottom:8px;align-items:start}
+@media (max-width:1000px){.front{grid-template-columns:1fr;gap:32px;padding-top:28px}}
+
+.sec-label{font-size:var(--t4);font-weight:600;color:var(--sub);letter-spacing:.12em;margin-bottom:12px}
+.lead-story h2{margin-top:10px;font-size:var(--t2);font-weight:600;line-height:1.45;color:var(--ink);letter-spacing:.01em}
 .lead-story h2 a{text-decoration:none}
-.lead-story h2 a:hover{text-decoration:underline;text-decoration-thickness:1px}
-.lead-story .n-sum{margin-top:16px;color:var(--text)}
-.lead-story aside{background:var(--ink);color:#fff;border-radius:var(--r);padding:24px;align-self:start}
-.lead-story aside .k{font-size:var(--t4);font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.72)}
-.lead-story aside p{margin-top:8px}
-@media (max-width:900px){.lead-story{grid-template-columns:1fr;gap:24px}}
+.lead-story h2 a:hover{text-decoration:underline;text-decoration-thickness:2px}
+.lead-story .n-sum{margin-top:14px;color:var(--text);max-width:44em}
+.lead-story .item-foot{margin-top:14px}
+.lead-story .insight{margin-top:24px}
+.more{margin-top:16px;display:inline-flex;align-items:center;gap:8px;min-height:44px;font-size:var(--t4);font-weight:600;color:var(--ink);text-decoration:none;border-bottom:1px solid var(--ink)}
+.more:hover{gap:12px}
+@media (max-width:640px){.lead-story h2{line-height:1.5}.insight{padding:20px 20px 24px}}
 
-.list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 48px}
-.list li{padding:28px 0;border-bottom:1px solid var(--line)}
-.list h3{margin-top:8px;font-size:var(--t3);font-weight:600;line-height:1.6;color:var(--ink)}
+.rail{display:grid;gap:24px}
+@media (max-width:1000px) and (min-width:641px){.rail{grid-template-columns:1fr 1fr;align-items:start}}
+
+/* 今すぐ対応（朱の帯）。0件のときも「無い」と言い切る */
+.urgent{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.urgent h2{display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-size:var(--t3);font-weight:600;letter-spacing:.04em;padding:12px 20px;line-height:1.5}
+.urgent ul{padding:4px 20px}
+.urgent li+li{border-top:1px solid var(--line)}
+.urgent li a{display:block;padding:14px 0;text-decoration:none;min-height:44px}
+.urgent li b{display:block;color:var(--ink);line-height:1.6}
+.urgent li a:hover b{text-decoration:underline}
+.urgent .u-meta{display:block;margin-top:4px;font-size:var(--t4);color:var(--sub);line-height:1.6}
+.urgent.is-clear h2{background:var(--ink)}   /* 該当なしのときは朱で煽らない */
+.urgent .u-none{padding:16px 20px;font-size:var(--t4);color:var(--sub)}
+.urgent .u-all{display:flex;align-items:center;min-height:44px;padding:0 20px;border-top:1px solid var(--line);font-size:var(--t4);font-weight:600;color:var(--ink);text-decoration:none}
+.urgent .u-all:hover{text-decoration:underline}
+
+/* 今朝の朝刊（新聞の折り目のように紺の罫で囲む） */
+.paper{border:1px solid var(--ink);border-top-width:3px;border-radius:var(--r);padding:16px 20px 20px;background:var(--bg)}
+.paper .k{display:flex;align-items:center;gap:6px;font-size:var(--t4);font-weight:600;color:var(--ink);letter-spacing:.08em}
+.paper .k time{margin-left:auto;font-family:var(--num);font-weight:400;color:var(--sub);letter-spacing:.02em}
+.paper h2{margin-top:10px;font-size:var(--t3);font-weight:600;line-height:1.6;color:var(--ink)}
+.paper p:not(.k){margin-top:6px;font-size:var(--t4);color:var(--sub);line-height:1.8}
+.btn{margin-top:14px;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:var(--r);background:var(--ink);color:#fff;font-size:var(--t4);font-weight:600;text-decoration:none;letter-spacing:.04em}
+.btn:hover{background:var(--ink2)}
+
+/* ---------- 一覧：見出し → 視点の抜粋 → 優先度・原因 ---------- */
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:56px;padding-bottom:10px;border-bottom:3px solid var(--ink)}
+.sec-head h2{font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.12em}
+.sec-head a{font-size:var(--t4);color:var(--sub);display:inline-flex;align-items:center;min-height:44px;margin:-14px 0}
+.sec-head a:hover{color:var(--ink)}
+.empty{padding:32px 0;color:var(--sub)}
+
+.list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 40px}
+.list .item{position:relative;padding:24px 0 28px;border-bottom:1px solid var(--line);display:flex;flex-direction:column}
+.list h3{margin-top:8px;font-size:var(--t3);font-weight:600;line-height:1.65;color:var(--ink)}
 .list h3 a{text-decoration:none}
-.list h3 a:hover{text-decoration:underline}
-.list .n-sum{margin-top:8px;font-size:var(--t4);color:var(--sub);line-height:1.8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.list h3 a::after{content:"";position:absolute;inset:0}           /* カード全体を押せるように */
+.list .item:hover h3 a{text-decoration:underline}
+.list h3 a:focus-visible{outline:none}
+.list h3 a:focus-visible::after{outline:2px solid var(--ink);outline-offset:4px;border-radius:var(--r)}
+.list .n-sum,.item-ins{margin-top:10px;font-size:var(--t4);line-height:1.85;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.list .n-sum{color:var(--sub)}
+.item-ins{color:var(--text);padding-left:12px;border-left:2px solid var(--ink)}
+.item-ins .lbl{font-weight:600;color:var(--ink);margin-right:8px;letter-spacing:.08em}
+.item-foot{margin-top:auto;padding-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+.lead-story .item-foot{margin-top:14px;padding-top:0}
 @media (max-width:1000px){.list{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:640px){.list{grid-template-columns:1fr}}
-
-.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:56px;padding-bottom:12px;border-bottom:1px solid var(--ink)}
-.sec-head h2{font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.08em}
-.sec-head a{font-size:var(--t4);color:var(--sub)}
-.empty{padding:48px 0;color:var(--sub)}
+@media (max-width:640px){
+  .list{grid-template-columns:1fr}
+  .list .item{padding:20px 0 22px}
+  .list .n-sum,.item-ins{-webkit-line-clamp:3}
+}
 
 /* ---------- 記事 ---------- */
-.article{max-width:760px;margin:0 auto;padding-top:48px}
-.article h1{margin-top:16px;font-size:var(--t2);font-weight:600;line-height:1.45;color:var(--ink);letter-spacing:.01em}
-.article .n-sum{margin-top:20px;font-size:var(--t3);color:var(--text);padding-left:16px;border-left:2px solid var(--ink)}
+.article{max-width:720px;margin:0 auto;padding-top:40px}
+.a-head h1{margin-top:12px;font-size:var(--t2);font-weight:600;line-height:1.45;color:var(--ink);letter-spacing:.01em}
+.a-head .n-sum{margin-top:16px;font-size:var(--t3);color:var(--text);line-height:1.9}
+@media (max-width:640px){.article{padding-top:24px}.a-head h1{line-height:1.5}}
 
-/* 概要表 */
-.facts{margin-top:32px;display:grid;grid-template-columns:auto 1fr;border-top:1px solid var(--ink);font-size:var(--t4)}
-.facts dt,.facts dd{padding:12px 0;border-bottom:1px solid var(--line)}
-.facts dt{color:var(--sub);font-weight:600;padding-right:24px;white-space:nowrap}
-.facts dd{color:var(--text);font-family:var(--jp)}
-@media (max-width:480px){.facts{grid-template-columns:1fr}.facts dt{padding-bottom:0;border-bottom:0}.facts dd{padding-top:2px}}
+/* 状況の帯：優先度の3段階、または原因分類を「一目で」 */
+.status{margin-top:24px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.status + .status{margin-top:0;border-top:0}
+.st-k{font-size:var(--t4);font-weight:600;color:var(--sub);letter-spacing:.08em;min-width:6em}
+.scale{display:flex;flex:1;min-width:260px;border:1px solid var(--mute);border-radius:var(--r);overflow:hidden}
+.scale li{flex:1;text-align:center;font-size:var(--t4);font-weight:600;color:var(--sub);line-height:36px;white-space:nowrap}
+.scale li+li{border-left:1px solid var(--mute)}
+.s-now .scale li.on{background:var(--accent);color:#fff}
+.s-week .scale li.on{background:var(--ink);color:#fff}
+.s-planned .scale li.on{background:var(--fill);color:var(--ink)}
+.st-v{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink)}
+@media (max-width:480px){.st-k{min-width:0;flex-basis:100%}.scale{min-width:0}}
 
-/* MyDataGuard の視点（示唆）。記事の中で一番目立たせる */
-.insight{margin-top:40px;background:var(--ink);color:#fff;border-radius:var(--r);padding:28px}
-.insight .k{display:flex;align-items:center;gap:8px;font-size:var(--t4);font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.72)}
-.insight .k::before{content:"";width:16px;height:2px;background:var(--accent)}
-.insight p{margin-top:12px;font-size:var(--t3);line-height:1.9}
-@media (max-width:640px){.insight{padding:20px}}
+/* 記事ページの視点：本文の列より少しはみ出して置く */
+.insight.big{margin-top:32px;padding:32px 40px 36px}
+.insight.big .ins-head{font-size:var(--t3);line-height:1.85}
+@media (min-width:900px){.insight.big{margin-left:-40px;margin-right:-40px;padding:36px 40px 40px}}
+@media (max-width:640px){.insight.big{margin-top:24px;padding:22px 20px 26px}}
 
-/* 本文（Markdown） */
-.prose{margin-top:40px}
-.prose h2{margin-top:48px;font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.04em;padding-bottom:8px;border-bottom:1px solid var(--line)}
-.prose h3{margin-top:32px;font-size:var(--t3);font-weight:600;color:var(--ink)}
-.prose p{margin-top:16px}
-.prose ul,.prose ol{margin-top:16px;padding-left:1.4em}
+/* 概要表：スマホでも「項目｜値」の2列を保つ */
+.facts-box{margin-top:32px}
+.facts-box h2,.prose h2,.actions h2,.meta-block h2{font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.06em}
+.facts-box h2{padding-bottom:8px;border-bottom:3px solid var(--ink)}
+.facts{font-size:var(--t4);line-height:1.7}
+.facts div{display:grid;grid-template-columns:9em minmax(0,1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.facts dt{color:var(--sub);font-weight:600}
+.facts dd{color:var(--ink);font-weight:600}
+@media (max-width:480px){.facts div{grid-template-columns:6.5em minmax(0,1fr)}}
+
+/* 本文（Markdown）。ルートの .prose（幅46em・上余白）を上書き */
+.news .prose{margin-top:8px;max-width:none}
+.prose h2{margin-top:44px;padding-left:12px;border-left:4px solid var(--ink);line-height:1.5}
+.prose h3{margin-top:28px;font-size:var(--t3);font-weight:600;color:var(--ink)}
+.prose p{margin-top:14px;line-height:1.95}
+.prose ul,.prose ol{margin-top:14px;padding-left:1.4em}
 .prose ul{list-style:disc}
 .prose ol{list-style:decimal}
-.prose li+li{margin-top:6px}
+.prose li{line-height:1.85}
+.prose li+li{margin-top:8px}
+.prose li::marker{color:var(--sub)}
 .prose a{color:var(--ink);font-weight:600}
 .prose code{font-family:var(--num);font-size:.92em;background:var(--fill);border-radius:4px;padding:1px 5px}
-.prose table{margin-top:16px;width:100%;border-collapse:collapse;font-size:var(--t4)}
-.prose th,.prose td{text-align:left;padding:10px 12px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
-.prose th{color:var(--sub);font-weight:600;border-bottom-color:var(--ink)}
+.prose table{margin-top:16px;width:100%;border-collapse:collapse;font-size:var(--t4);background:var(--surface);border-radius:var(--r);overflow:hidden}
+.prose th,.prose td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+.prose th{color:var(--sub);font-weight:600;background:var(--tint)}
+.prose tr:last-child td{border-bottom:0}
+.prose td:first-child{font-family:var(--num);font-weight:600;color:var(--ink);white-space:nowrap}
 .prose blockquote{margin:16px 0 0;padding-left:16px;border-left:2px solid var(--mute);color:var(--sub)}
 
-/* 自社でやるべきこと */
-.actions{margin-top:48px;border:1px solid var(--ink);border-radius:var(--r);padding:24px 28px}
-.actions h2{font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.04em}
-.actions ol{margin-top:12px;counter-reset:a}
-.actions li{counter-increment:a;display:grid;grid-template-columns:32px 1fr;padding:10px 0;border-top:1px solid var(--line)}
+/* 自社でやるべきこと：チェックリスト */
+.actions{margin-top:48px;background:var(--surface);border:1px solid var(--ink);border-radius:var(--r);overflow:hidden}
+.actions h2{display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;padding:14px 24px;line-height:1.5}
+.actions ol{counter-reset:a;padding:4px 24px 8px}
+.actions li{counter-increment:a;display:grid;grid-template-columns:28px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line);line-height:1.8}
 .actions li:first-child{border-top:0}
-.actions li::before{content:counter(a);font-family:var(--num);font-weight:600;color:var(--accent)}
-@media (max-width:640px){.actions{padding:20px}}
+.actions li::before{content:counter(a);font-family:var(--num);font-weight:600;font-size:var(--t4);color:var(--ink);border:1.5px solid var(--ink);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+@media (max-width:640px){.actions h2{padding:12px 20px}.actions ol{padding:4px 20px 8px}}
 
 /* 出典・訂正・注記 */
-.meta-block{margin-top:48px;font-size:var(--t4);color:var(--sub)}
-.meta-block h2{font-size:var(--t4);font-weight:600;color:var(--ink);letter-spacing:.08em}
+.meta-block{margin-top:40px;font-size:var(--t4);color:var(--sub)}
+.meta-block h2{font-size:var(--t4);letter-spacing:.1em;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .meta-block ol{margin-top:8px;list-style:decimal;padding-left:1.4em}
 .meta-block li{margin-top:6px;word-break:break-all}
 .meta-block a{color:var(--ink)}
-.tags{margin-top:32px;display:flex;flex-wrap:wrap;gap:8px}
-.tags a{font-size:var(--t4);color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;line-height:2}
+.tags{margin-top:28px;display:flex;flex-wrap:wrap;gap:8px}
+.tags a{font-size:var(--t4);color:var(--ink);text-decoration:none;border:1px solid var(--mute);border-radius:var(--r);padding:0 12px;min-height:36px;display:inline-flex;align-items:center}
 .tags a:hover{border-color:var(--ink)}
-.disclose{margin-top:32px;padding-top:16px;border-top:1px solid var(--line);font-size:var(--t4);color:var(--sub)}
+.disclose{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:var(--t4);color:var(--sub)}
 
 /* MyDataGuard への導線（事案記事のみ） */
-.bridge{margin-top:48px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px 28px;display:flex;gap:16px 32px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bridge{margin-top:48px;background:var(--tint);border-radius:var(--r);padding:24px 28px;display:flex;gap:16px 32px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .bridge b{color:var(--ink)}
 .bridge p{font-size:var(--t4);color:var(--sub);margin-top:4px;max-width:34em}
 .bridge a{flex:none;font-size:var(--t4);font-weight:600;color:#fff;background:var(--ink);border-radius:var(--r);padding:0 20px;min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
 .bridge a:hover{background:var(--ink2)}
+@media (max-width:640px){.bridge{padding:20px}.bridge a{width:100%;justify-content:center}}
+
+/* 次に読む */
+.related{margin-top:24px;padding-bottom:24px}
 
 /* 固定ページ */
-.page{max-width:760px;margin:0 auto;padding-top:48px}
+.page{max-width:720px;margin:0 auto;padding-top:48px}
 .page h1{font-size:var(--t2);font-weight:600;color:var(--ink);line-height:1.45}
