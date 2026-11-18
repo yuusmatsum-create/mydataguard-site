@@ -1,0 +1,15 @@
+{
+  "_note": "夜間処理が参照する情報源。use: primary=記事の根拠にできる / lead=端緒のみ（本文の根拠にしない）",
+  "sources": [
+    { "id": "jpcert-alert", "name": "JPCERT/CC 注意喚起", "url": "https://www.jpcert.or.jp/rss/jpcert.rdf", "type": "rss", "use": "primary", "categories": ["vulnerability", "threat"] },
+    { "id": "ipa-security", "name": "IPA 重要なセキュリティ情報", "url": "https://www.ipa.go.jp/security/alert-rss.rdf", "type": "rss", "use": "primary", "categories": ["vulnerability"] },
+    { "id": "jvn", "name": "JVN 新着", "url": "https://jvn.jp/rss/jvn.rdf", "type": "rss", "use": "primary", "categories": ["vulnerability"] },
+    { "id": "cisa-kev", "name": "CISA Known Exploited Vulnerabilities", "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", "type": "json", "use": "primary", "categories": ["vulnerability"] },
+    { "id": "nvd", "name": "NVD CVE API 2.0", "url": "https://services.nvd.nist.gov/rest/json/cves/2.0", "type": "api", "use": "primary", "categories": ["vulnerability"] },
+    { "id": "epss", "name": "FIRST EPSS", "url": "https://api.first.org/data/v1/epss", "type": "api", "use": "primary", "categories": ["vulnerability"] },
+    { "id": "ppc", "name": "個人情報保護委員会 報道発表", "url": "https://www.ppc.go.jp/news/", "type": "web", "use": "primary", "categories": ["incident", "threat"] },
+    { "id": "nisc", "name": "NISC 注意喚起", "url": "https://www.nisc.go.jp/", "type": "web", "use": "primary", "categories": ["threat"] },
+    { "id": "npa", "name": "警察庁 サイバー事案の統計・注意喚起", "url": "https://www.npa.go.jp/bureau/cyber/", "type": "web", "use": "primary", "categories": ["threat"] },
+    { "id": "web-search", "name": "企業の公式発表（検索）", "query": ["不正アクセス お知らせ", "個人情報 漏えい お詫び", "ランサムウェア 被害 お知らせ", "サイバー攻撃 システム障害 お知らせ"], "type": "search", "use": "lead", "categories": ["incident"] }
+  ]
+}

@@ -1,0 +1,16 @@
+---
+import Kicker from './Kicker.astro';
+import { url } from '../lib/articles.js';
+const { items } = Astro.props;
+---
+{items.length === 0
+  ? <p class="empty">まだ記事がありません。毎朝更新します。</p>
+  : <ul class="list">
+      {items.map((e) => (
+        <li>
+          <Kicker data={e.data} />
+          <h3><a href={url(`${e.id}/`)}>{e.data.title}</a></h3>
+          <p class="n-sum">{e.data.summary}</p>
+        </li>
+      ))}
+    </ul>}

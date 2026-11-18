@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import ArticleList from '../../components/ArticleList.astro';
+import { getArticles } from '../../lib/articles.js';
+import { CATEGORIES } from '../../lib/validate.js';
+
+export async function getStaticPaths() {
+  const all = await getArticles();
+  return Object.keys(CATEGORIES).map((cat) => ({ params: { cat }, props: { items: all.filter((e) => e.data.category === cat) } }));
+}
+const { cat } = Astro.params;
+const { items } = Astro.props;
+const LEAD = {
+  incident: '国内の組織が公表した情報漏えい・サイバー攻撃の事案です。原因の分類と、同じ被害を防ぐためにやるべきことを添えています。',
+  vulnerability: '悪用が確認された、または影響の大きい脆弱性です。対応の優先度を「今すぐ／1週間以内／計画的に」の3段階で示します。',
+  threat: '公的機関のレポートや注意喚起から、攻撃の傾向と組織への影響を読み解きます。',
+  digest: 'その日の記事と、記事にしなかった注目ニュースを1本にまとめた朝刊です。',
+};
+---
+<Base title={`${CATEGORIES[cat]}｜MyDataGuard ニュース`} description={LEAD[cat]} current={cat}>
+  <section class="masthead">
+    <div class="wrap">
+      <p class="eyebrow">カテゴリ</p>
+      <h1>{CATEGORIES[cat]}</h1>
+      <p class="lead">{LEAD[cat]}</p>
+    </div>
+  </section>
+  <div class="wrap"><ArticleList items={items} /></div>
+</Base>

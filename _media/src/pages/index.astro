@@ -1,0 +1,49 @@
+---
+import Base from '../layouts/Base.astro';
+import Kicker from '../components/Kicker.astro';
+import ArticleList from '../components/ArticleList.astro';
+import { getArticles, url, fmtDate } from '../lib/articles.js';
+
+const all = await getArticles();
+const [lead, ...rest] = all.filter((e) => e.data.category !== 'digest');
+const digest = all.find((e) => e.data.category === 'digest');
+const urgent = all.filter((e) => e.data.priority === 'now' && e !== lead).slice(0, 6);
+const today = fmtDate(new Date());
+---
+<Base title="MyDataGuard ニュース｜漏えい・脆弱性・脅威を、毎朝3分で" description="国内の情報漏えい事案、悪用されている脆弱性、最新の脅威動向を、公式発表と公的機関の情報だけをもとに、要点と「自社でやるべきこと」に絞って毎朝お届けします。" current="home">
+  <section class="masthead">
+    <div class="wrap">
+      <p class="eyebrow"><span>MyDataGuard ニュース</span><span class="num">{today}</span></p>
+      <h1>漏えい・脆弱性・脅威を、<em>毎朝3分</em>で。</h1>
+      <p class="lead">公式発表と公的機関の情報だけを根拠に、要点と「自社でやるべきこと」に絞ってお届けします。</p>
+    </div>
+  </section>
+
+  <div class="wrap">
+    {lead && (
+      <article class="lead-story">
+        <div>
+          <Kicker data={lead.data} />
+          <h2><a href={url(`${lead.id}/`)}>{lead.data.title}</a></h2>
+          <p class="n-sum">{lead.data.summary}</p>
+        </div>
+        {lead.data.insight && (
+          <aside aria-label="MyDataGuard の視点">
+            <p class="k">MyDataGuard の視点</p>
+            <p>{lead.data.insight}</p>
+          </aside>
+        )}
+      </article>
+    )}
+
+    {urgent.length > 0 && (
+      <>
+        <div class="sec-head"><h2>今すぐ対応が必要な脆弱性</h2><a href={url('category/vulnerability/')}>脆弱性の記事をすべて見る</a></div>
+        <ArticleList items={urgent} />
+      </>
+    )}
+
+    <div class="sec-head"><h2>新着</h2>{digest && <a href={url(`${digest.id}/`)}>今日の朝刊を読む</a>}</div>
+    <ArticleList items={lead ? rest.slice(0, 18) : []} />
+  </div>
+</Base>

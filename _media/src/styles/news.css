@@ -1,0 +1,127 @@
+/* MyDataGuard ニュース 追加スタイル
+   /style.css の約束事（紺の墨と紙の白、強調は朱1色、文字4段階、太さ400/600、角丸12px、影なし）を守る。
+   ニュースは「読む」場所なので、本文の行長を 36〜40字 に抑え、情報の階層を罫線と余白で分ける。 */
+
+.news main{min-height:60vh}
+
+/* ---------- カテゴリの帯 ---------- */
+.cats{border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:5}
+.cats .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cats .wrap::-webkit-scrollbar{display:none}
+.cats a{flex:none;display:inline-flex;align-items:center;min-height:48px;padding:0 12px;font-size:var(--t4);font-weight:600;
+  color:var(--sub);text-decoration:none;border-bottom:2px solid transparent;letter-spacing:.04em}
+.cats a:first-child{padding-left:0}
+.cats a:hover{color:var(--ink)}
+.cats a[aria-current=page]{color:var(--ink);border-bottom-color:var(--ink)}
+.nav a[aria-current=page]{text-decoration:underline}
+
+/* ---------- 題字 ---------- */
+.masthead{padding:56px 0 40px;border-bottom:1px solid var(--ink)}
+.masthead .eyebrow{display:flex;gap:12px;flex-wrap:wrap}
+.masthead h1{margin-top:12px;font-size:var(--t1);font-weight:600;line-height:1.25;color:var(--ink);letter-spacing:.01em}
+.masthead h1 em{font-style:normal;background:linear-gradient(transparent 82%,var(--accent) 82%,var(--accent) 92%,transparent 92%)}
+.masthead p.lead{margin-top:16px;max-width:36em;color:var(--sub)}
+
+/* ---------- 記事の小見出し（カテゴリ・日付） ---------- */
+.kicker{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:var(--t4);color:var(--sub);letter-spacing:.04em}
+.kicker .cat{font-weight:600;color:var(--ink);text-decoration:none}
+.kicker .cat:hover{text-decoration:underline}
+.kicker time{font-family:var(--num)}
+
+/* 対応の優先度（脆弱性）。「今すぐ」だけ朱で塗る */
+.prio{display:inline-flex;align-items:center;gap:6px;font-size:var(--t4);font-weight:600;border-radius:var(--r);padding:0 10px;line-height:2;white-space:nowrap}
+.prio::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.prio.now{background:var(--accent);color:#fff}
+.prio.week{border:1px solid var(--ink);color:var(--ink)}
+.prio.planned{border:1px solid var(--mute);color:var(--sub)}
+
+/* ---------- 一覧 ---------- */
+.lead-story{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:48px;padding:48px 0;border-bottom:1px solid var(--line)}
+.lead-story h2{margin-top:12px;font-size:var(--t2);font-weight:600;line-height:1.45;color:var(--ink)}
+.lead-story h2 a{text-decoration:none}
+.lead-story h2 a:hover{text-decoration:underline;text-decoration-thickness:1px}
+.lead-story .n-sum{margin-top:16px;color:var(--text)}
+.lead-story aside{background:var(--ink);color:#fff;border-radius:var(--r);padding:24px;align-self:start}
+.lead-story aside .k{font-size:var(--t4);font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.72)}
+.lead-story aside p{margin-top:8px}
+@media (max-width:900px){.lead-story{grid-template-columns:1fr;gap:24px}}
+
+.list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 48px}
+.list li{padding:28px 0;border-bottom:1px solid var(--line)}
+.list h3{margin-top:8px;font-size:var(--t3);font-weight:600;line-height:1.6;color:var(--ink)}
+.list h3 a{text-decoration:none}
+.list h3 a:hover{text-decoration:underline}
+.list .n-sum{margin-top:8px;font-size:var(--t4);color:var(--sub);line-height:1.8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media (max-width:1000px){.list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.list{grid-template-columns:1fr}}
+
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:56px;padding-bottom:12px;border-bottom:1px solid var(--ink)}
+.sec-head h2{font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.08em}
+.sec-head a{font-size:var(--t4);color:var(--sub)}
+.empty{padding:48px 0;color:var(--sub)}
+
+/* ---------- 記事 ---------- */
+.article{max-width:760px;margin:0 auto;padding-top:48px}
+.article h1{margin-top:16px;font-size:var(--t2);font-weight:600;line-height:1.45;color:var(--ink);letter-spacing:.01em}
+.article .n-sum{margin-top:20px;font-size:var(--t3);color:var(--text);padding-left:16px;border-left:2px solid var(--ink)}
+
+/* 概要表 */
+.facts{margin-top:32px;display:grid;grid-template-columns:auto 1fr;border-top:1px solid var(--ink);font-size:var(--t4)}
+.facts dt,.facts dd{padding:12px 0;border-bottom:1px solid var(--line)}
+.facts dt{color:var(--sub);font-weight:600;padding-right:24px;white-space:nowrap}
+.facts dd{color:var(--text);font-family:var(--jp)}
+@media (max-width:480px){.facts{grid-template-columns:1fr}.facts dt{padding-bottom:0;border-bottom:0}.facts dd{padding-top:2px}}
+
+/* MyDataGuard の視点（示唆）。記事の中で一番目立たせる */
+.insight{margin-top:40px;background:var(--ink);color:#fff;border-radius:var(--r);padding:28px}
+.insight .k{display:flex;align-items:center;gap:8px;font-size:var(--t4);font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.72)}
+.insight .k::before{content:"";width:16px;height:2px;background:var(--accent)}
+.insight p{margin-top:12px;font-size:var(--t3);line-height:1.9}
+@media (max-width:640px){.insight{padding:20px}}
+
+/* 本文（Markdown） */
+.prose{margin-top:40px}
+.prose h2{margin-top:48px;font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.04em;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.prose h3{margin-top:32px;font-size:var(--t3);font-weight:600;color:var(--ink)}
+.prose p{margin-top:16px}
+.prose ul,.prose ol{margin-top:16px;padding-left:1.4em}
+.prose ul{list-style:disc}
+.prose ol{list-style:decimal}
+.prose li+li{margin-top:6px}
+.prose a{color:var(--ink);font-weight:600}
+.prose code{font-family:var(--num);font-size:.92em;background:var(--fill);border-radius:4px;padding:1px 5px}
+.prose table{margin-top:16px;width:100%;border-collapse:collapse;font-size:var(--t4)}
+.prose th,.prose td{text-align:left;padding:10px 12px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.prose th{color:var(--sub);font-weight:600;border-bottom-color:var(--ink)}
+.prose blockquote{margin:16px 0 0;padding-left:16px;border-left:2px solid var(--mute);color:var(--sub)}
+
+/* 自社でやるべきこと */
+.actions{margin-top:48px;border:1px solid var(--ink);border-radius:var(--r);padding:24px 28px}
+.actions h2{font-size:var(--t3);font-weight:600;color:var(--ink);letter-spacing:.04em}
+.actions ol{margin-top:12px;counter-reset:a}
+.actions li{counter-increment:a;display:grid;grid-template-columns:32px 1fr;padding:10px 0;border-top:1px solid var(--line)}
+.actions li:first-child{border-top:0}
+.actions li::before{content:counter(a);font-family:var(--num);font-weight:600;color:var(--accent)}
+@media (max-width:640px){.actions{padding:20px}}
+
+/* 出典・訂正・注記 */
+.meta-block{margin-top:48px;font-size:var(--t4);color:var(--sub)}
+.meta-block h2{font-size:var(--t4);font-weight:600;color:var(--ink);letter-spacing:.08em}
+.meta-block ol{margin-top:8px;list-style:decimal;padding-left:1.4em}
+.meta-block li{margin-top:6px;word-break:break-all}
+.meta-block a{color:var(--ink)}
+.tags{margin-top:32px;display:flex;flex-wrap:wrap;gap:8px}
+.tags a{font-size:var(--t4);color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;line-height:2}
+.tags a:hover{border-color:var(--ink)}
+.disclose{margin-top:32px;padding-top:16px;border-top:1px solid var(--line);font-size:var(--t4);color:var(--sub)}
+
+/* MyDataGuard への導線（事案記事のみ） */
+.bridge{margin-top:48px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px 28px;display:flex;gap:16px 32px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bridge b{color:var(--ink)}
+.bridge p{font-size:var(--t4);color:var(--sub);margin-top:4px;max-width:34em}
+.bridge a{flex:none;font-size:var(--t4);font-weight:600;color:#fff;background:var(--ink);border-radius:var(--r);padding:0 20px;min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+.bridge a:hover{background:var(--ink2)}
+
+/* 固定ページ */
+.page{max-width:760px;margin:0 auto;padding-top:48px}
+.page h1{font-size:var(--t2);font-weight:600;color:var(--ink);line-height:1.45}

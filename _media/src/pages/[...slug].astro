@@ -1,0 +1,96 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Kicker from '../components/Kicker.astro';
+import { getArticles, url, fmtDate } from '../lib/articles.js';
+import { CAUSES } from '../lib/validate.js';
+
+export async function getStaticPaths() {
+  const all = await getArticles();
+  return all.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+const { entry } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+
+const facts = [...d.facts];
+if (d.cause) facts.push({ label: '原因の分類', value: CAUSES[d.cause] });
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: d.title,
+  description: d.summary,
+  datePublished: d.publishedAt.toISOString(),
+  dateModified: (d.updatedAt ?? d.publishedAt).toISOString(),
+  inLanguage: 'ja',
+  publisher: { '@type': 'Organization', name: 'MyDataGuard' },
+};
+---
+<Base title={`${d.title}｜MyDataGuard ニュース`} description={d.summary} current={d.category} ogType="article" jsonLd={jsonLd}>
+  <article class="wrap">
+    <div class="article">
+      <Kicker data={d} />
+      <h1>{d.title}</h1>
+      <p class="n-sum">{d.summary}</p>
+
+      {facts.length > 0 && (
+        <dl class="facts">
+          {facts.map((f) => (<><dt>{f.label}</dt><dd>{f.value}</dd></>))}
+        </dl>
+      )}
+
+      {d.insight && (
+        <section class="insight" aria-label="MyDataGuard の視点">
+          <p class="k">MyDataGuard の視点</p>
+          <p>{d.insight}</p>
+        </section>
+      )}
+
+      <div class="prose"><Content /></div>
+
+      {d.actions.length > 0 && (
+        <section class="actions" aria-labelledby="actions-h">
+          <h2 id="actions-h">自社でやるべきこと</h2>
+          <ol>{d.actions.map((a) => <li>{a}</li>)}</ol>
+        </section>
+      )}
+
+      {d.category === 'incident' && (
+        <aside class="bridge">
+          <div>
+            <b>あなたの情報は、どの会社にありますか。</b>
+            <p>MyDataGuard は、届いたメールの件名と差出人だけから、あなたの個人情報を持つ会社の一覧を作ります。本文は読まず、ブラウザの外に送りません。</p>
+          </div>
+          <a href="/">MyDataGuard を見る</a>
+        </aside>
+      )}
+
+      <section class="meta-block" aria-labelledby="src-h">
+        <h2 id="src-h">出典</h2>
+        <ol>
+          {d.sources.map((s) => (
+            <li><a href={s.url} rel="noopener">{s.title}</a>{s.date && `（${s.date}）`}</li>
+          ))}
+        </ol>
+      </section>
+
+      {d.corrections.length > 0 && (
+        <section class="meta-block" aria-labelledby="fix-h">
+          <h2 id="fix-h">訂正・更新の履歴</h2>
+          <ol>{d.corrections.map((c) => <li>{c.date}　{c.note}</li>)}</ol>
+        </section>
+      )}
+
+      {d.tags.length > 0 && (
+        <p class="tags">{d.tags.map((t) => <a href={url(`tag/${t}/`)}>#{t}</a>)}</p>
+      )}
+
+      <p class="disclose">
+        この記事は、公式発表と公的機関の公表情報をもとに作成しています。下書きにAIを使い、公開前に編集者が内容を確認しました。
+        {d.updatedAt && <>最終更新：{fmtDate(d.updatedAt)}。</>}
+        誤りのご指摘は<a href={url('about/')}>編集方針・訂正について</a>をご覧ください。
+      </p>
+    </div>
+  </article>
+</Base>

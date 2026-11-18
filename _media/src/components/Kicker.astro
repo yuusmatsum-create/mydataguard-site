@@ -1,0 +1,12 @@
+---
+import { CATEGORIES } from '../lib/validate.js';
+import { url, fmtDate } from '../lib/articles.js';
+const { data } = Astro.props;
+const PRIO = { now: '今すぐ対応', week: '1週間以内に対応', planned: '計画的に対応' };
+---
+<p class="kicker">
+  <a class="cat" href={url(`category/${data.category}/`)}>{CATEGORIES[data.category]}</a>
+  <time datetime={data.publishedAt.toISOString().slice(0, 10)}>{fmtDate(data.publishedAt)}</time>
+  {data.priority && <span class={`prio ${data.priority}`}>{PRIO[data.priority]}</span>}
+  {data.draft && <span class="prio planned">下書き</span>}
+</p>
