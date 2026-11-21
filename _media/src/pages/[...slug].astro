@@ -7,6 +7,7 @@ import Icon from '../components/Icon.astro';
 import { getArticles, url, fmtDate } from '../lib/articles.js';
 import { CAUSES, CATEGORIES } from '../lib/validate.js';
 import { displayTitle, splitInsight, PRIO } from '../lib/display.js';
+import { tagSlug } from '../lib/tags.js';
 
 export async function getStaticPaths() {
   const all = await getArticles();
@@ -115,7 +116,7 @@ const jsonLd = {
       )}
 
       {d.tags.length > 0 && (
-        <p class="tags">{d.tags.map((t) => <a href={url(`tag/${t}/`)}>#{t}</a>)}</p>
+        <p class="tags">{d.tags.map((t) => <a href={url(`tag/${tagSlug(t)}/`)}>#{t}</a>)}</p>
       )}
 
       <p class="disclose">
