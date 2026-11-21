@@ -4,5 +4,9 @@
 <link>https://mydataguard.jp/news/</link>
 <description>漏えい・脆弱性・脅威を、毎朝3分で。</description>
 <language>ja</language>
-
+<item><title>Cisco Expressway に root 権限でコマンドを実行される脆弱性（CVE-2026-76466）、悪用を確認</title><link>https://mydataguard.jp/news/2026-11-21-cisco-expressway-hardcoded/</link><guid>https://mydataguard.jp/news/2026-11-21-cisco-expressway-hardcoded/</guid><pubDate>Sat, 21 Nov 2026 00:00:00 GMT</pubDate><description>ビデオ会議・通話の中継に使われる Cisco Expressway シリーズに、認証なしで root 権限のコマンドを実行される脆弱性。10月に公表済みだったが、米CISAが11月20日に悪用を確認した一覧へ追加した。</description></item>
+<item><title>朝刊 11月21日：仮想基盤とビデオ会議装置の脆弱性が「悪用確認」に</title><link>https://mydataguard.jp/news/2026-11-21-digest/</link><guid>https://mydataguard.jp/news/2026-11-21-digest/</guid><pubDate>Sat, 21 Nov 2026 00:00:00 GMT</pubDate><description>本日の記事4本（今すぐ対応2本、1週間以内2本）と、記事にしなかった注目ニュース5件。</description></item>
+<item><title>NGINX に複数の脆弱性、HTTP/2 を使う構成で遠隔からコード実行のおそれ</title><link>https://mydataguard.jp/news/2026-11-21-nginx-http2/</link><guid>https://mydataguard.jp/news/2026-11-21-nginx-http2/</guid><pubDate>Sat, 21 Nov 2026 00:00:00 GMT</pubDate><description>Webサーバー・リバースプロキシとして広く使われる NGINX に、CVSS v4.0 で 9.2 の脆弱性5件を含む複数の脆弱性。11月18日に修正版 1.30.7 / 1.31.9 が公開され、IPA が対策を呼びかけている。</description></item>
+<item><title>PHP に任意のコード実行につながる複数の脆弱性、11月19日に修正版を公開</title><link>https://mydataguard.jp/news/2026-11-21-php-november-release/</link><guid>https://mydataguard.jp/news/2026-11-21-php-november-release/</guid><pubDate>Sat, 21 Nov 2026 00:00:00 GMT</pubDate><description>The PHP Group が深刻度 Critical の7件を含む脆弱性を修正した PHP 8.5.13 / 8.4.28 / 8.3.37 / 8.2.36 を公開。IPA と JPCERT/CC が更新を呼びかけている。新たな脆弱性の悪用は現時点で確認されていない。</description></item>
+<item><title>VMware vCenter に認証回避の脆弱性（CVE-2026-123890）、悪用を確認</title><link>https://mydataguard.jp/news/2026-11-21-vmware-vcenter-auth-bypass/</link><guid>https://mydataguard.jp/news/2026-11-21-vmware-vcenter-auth-bypass/</guid><pubDate>Sat, 21 Nov 2026 00:00:00 GMT</pubDate><description>仮想基盤の管理サーバー VMware vCenter に、ネットワークから届けば認証なしで管理機能に入られる脆弱性。米CISAが11月20日に「悪用を確認した脆弱性」に追加した。修正版への更新を急ぐ必要がある。</description></item>
 </channel></rss>
