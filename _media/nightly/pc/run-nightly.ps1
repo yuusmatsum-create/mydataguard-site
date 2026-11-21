@@ -3,7 +3,15 @@
 #   powershell -ExecutionPolicy Bypass -File run-nightly.ps1
 # 仕事は「下書きの Pull Request を作る」まで。マージはしない。
 
-$ErrorActionPreference = 'Stop'
+# git は進捗を標準エラーに出すため、'Stop' にすると Windows PowerShell 5.1 で誤って止まる。
+# 外部コマンドの成否は終了コードで判定する。
+$ErrorActionPreference = 'Continue'
+
+function Invoke-Step([string]$Label, [scriptblock]$Cmd) {
+  Write-Host "== $Label"
+  & $Cmd
+  if ($LASTEXITCODE -ne 0) { throw "$Label に失敗しました（終了コード $LASTEXITCODE）" }
+}
 
 # ---- 設定（必要ならここだけ書き換える） ----
 $RepoDir    = Join-Path $env:USERPROFILE 'Desktop\mydataguard-site'   # リポジトリの clone 先
@@ -17,17 +25,20 @@ $Log   = Join-Path $LogDir "nightly_$Stamp.log"
 Start-Transcript -Path $Log -Append | Out-Null
 
 try {
+  foreach ($c in 'git','npm','gh','claude') {
+    if (-not (Get-Command $c -ErrorAction SilentlyContinue)) { throw "$c が見つかりません（PC_SETUP.md の手順1）" }
+  }
   if (-not (Test-Path $RepoDir)) { throw "リポジトリが見つかりません: $RepoDir（PC_SETUP.md の手順2を実行してください）" }
   Set-Location $RepoDir
 
   # 起点ブランチを最新にする（作業中の変更があれば中止して人に知らせる）
   if (git status --porcelain) { throw '作業フォルダに未保存の変更があります。確認してから再実行してください。' }
-  git fetch origin $BaseBranch
-  git checkout $BaseBranch
-  git merge --ff-only "origin/$BaseBranch"
+  Invoke-Step 'git fetch'    { git fetch origin $BaseBranch }
+  Invoke-Step 'git checkout' { git checkout $BaseBranch }
+  Invoke-Step 'git merge'    { git merge --ff-only "origin/$BaseBranch" }
 
   Push-Location '_media'
-  npm ci --no-audit --no-fund
+  Invoke-Step 'npm ci' { npm ci --no-audit --no-fund }
   Pop-Location
 
   $Today  = Get-Date -Format 'yyyy-MM-dd'
@@ -53,7 +64,7 @@ try {
     'Bash(ls:*)','Bash(cat:*)','Bash(head:*)','Bash(grep:*)','Bash(date:*)'
   )
 
-  claude -p $Prompt --permission-mode dontAsk --allowedTools $Allowed --output-format text
+  Invoke-Step 'claude' { claude -p $Prompt --permission-mode dontAsk --allowedTools $Allowed --output-format text }
 
   # 終わったら起点ブランチに戻しておく（翌晩の実行のため）
   git checkout $BaseBranch
